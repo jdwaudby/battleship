@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
@@ -33,18 +34,7 @@ namespace Battleship.Library.Services.Implementations
 
         public IEnumerable<Point> GetShipPositions(Grid grid)
         {
-            var shipPositions = new List<Point>();
-
-            for (int x = 0; x < grid.Squares.GetLength(0); x++)
-            {
-                for (int y = 0; y < grid.Squares.GetLength(1); y++)
-                {
-                    if (grid.Squares[x,y].Status == SquareStatus.Ship)
-                        shipPositions.Add(new Point(x, y));
-                }
-            }
-
-            return shipPositions;
+            return GetPositions(grid, SquareStatus.Ship);
         }
 
         public void SetRandomShipPositions(Grid grid, int maxX, int maxY, int ships)
@@ -64,6 +54,40 @@ namespace Battleship.Library.Services.Implementations
 
                 square.Status = SquareStatus.Ship;
             }
+        }
+
+        public IEnumerable<Point> GetValidTargets(Grid grid)
+        {
+            return GetPositions(grid, SquareStatus.Empty, SquareStatus.Ship);
+        }
+
+        public bool Attack(Grid grid, Point target)
+        {
+            Square square = grid.Squares[target.X, target.Y];
+            if (square.Status == SquareStatus.Ship)
+            {
+                square.Status = SquareStatus.DeadShip;
+                return true;
+            }
+
+            square.Status = SquareStatus.Hit;
+            return false;
+        }
+
+        private static IEnumerable<Point> GetPositions(Grid grid, params SquareStatus[] statuses)
+        {
+            var positions = new List<Point>();
+
+            for (int x = 0; x < grid.Squares.GetLength(0); x++)
+            {
+                for (int y = 0; y < grid.Squares.GetLength(1); y++)
+                {
+                    if (statuses.Contains(grid.Squares[x, y].Status))
+                        positions.Add(new Point(x, y));
+                }
+            }
+
+            return positions;
         }
     }
 }

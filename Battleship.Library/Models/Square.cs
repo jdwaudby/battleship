@@ -1,6 +1,6 @@
 ﻿using Battleship.Library.Enums;
 
-namespace Battleship.Library
+namespace Battleship.Library.Models
 {
     public class Square
     {

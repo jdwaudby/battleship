@@ -37,8 +37,11 @@ namespace Battleship.Library.Services.Implementations
             return GetPositions(grid, SquareStatus.Ship);
         }
 
-        public void SetRandomShipPositions(Grid grid, int maxX, int maxY, int ships)
+        public void SetRandomShipPositions(Grid grid, int ships)
         {
+            int maxX = grid.Squares.GetLength(0);
+            int maxY = grid.Squares.GetLength(1);
+
             var rand = new Random();
             for (int i = 0; i < ships; i++)
             {

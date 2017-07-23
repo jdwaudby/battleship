@@ -36,7 +36,7 @@ namespace Battleship.App
 
             int ships = int.Parse(input);
 
-            _gridService.SetRandomShipPositions(enemyGrid, width, height, ships);
+            _gridService.SetRandomShipPositions(enemyGrid, ships);
 
             Console.WriteLine();
             Console.WriteLine("Place ships randomly:");
@@ -45,7 +45,7 @@ namespace Battleship.App
             bool autoPositionShips = bool.Parse(input);
             if (autoPositionShips)
             {
-                _gridService.SetRandomShipPositions(playerGrid, width, height, ships);
+                _gridService.SetRandomShipPositions(playerGrid, ships);
             }
             else
             {

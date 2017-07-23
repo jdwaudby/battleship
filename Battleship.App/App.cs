@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Drawing;
 using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
@@ -33,41 +33,41 @@ namespace Battleship.App
 
             int ships = int.Parse(input);
 
+            _gridService.SetRandomShipPositions(enemyGrid, width, height, ships);
+
             for (int i = 0; i < ships; i++)
             {
-                for (int squareX = 0; squareX < width; squareX++)
+                var shipPositions = _gridService.GetShipPositions(playerGrid);
+                foreach (Point shipPosition in shipPositions)
                 {
-                    for (int squareY = 0; squareY < height; squareY++)
-                    {
-                        if (playerGrid.Squares[squareX, squareY].Status == SquareStatus.Ship)
-                            Console.WriteLine($"Ship at {squareX},{squareY}");
-                    }
+                    Console.WriteLine($"Ship at {shipPosition.X},{shipPosition.Y}");
+                }                    
+
+                Console.WriteLine($"Please enter ship {i} co-ords:");
+                input = Console.ReadLine();
+
+                var inputCoords = input.Split(',');
+                int x = int.Parse(inputCoords[0]);
+                int y = int.Parse(inputCoords[1]);
+
+                // Todo: Check co-ords are within the grid boundaries.
+
+                Square square = playerGrid.Squares[x, y];
+                while (square.Status == SquareStatus.Ship)
+                {
+                    Console.WriteLine($"Ship already at position {x},{y}");
+                    Console.WriteLine($"Please enter ship {i} co-ords:");
+                    input = Console.ReadLine();
+
+                    inputCoords = input.Split(',');
+                    x = int.Parse(inputCoords[0]);
+                    y = int.Parse(inputCoords[1]);
+
+                    square = playerGrid.Squares[x, y];
                 }
 
-                var rand = new Random();
-
-                int playerShipX, playerShipY,
-                    enemyShipX = rand.Next(0, width), enemyShipY = rand.Next(0, height);
-
-                Console.WriteLine($"Please enter ship {i} x position:");
-                input = Console.ReadLine();
-
-                playerShipX = int.Parse(input);
-
-                Console.WriteLine($"Please enter ship {i} y position:");
-                input = Console.ReadLine();
-
-                playerShipY = int.Parse(input);
-
-                Debug.WriteLine($"Enemy ship {enemyShipX},{enemyShipY}");
-
-                // Todo: Prevent ships from being placed on squares already occupied by a ship.
-
-                playerGrid.Squares[playerShipX, playerShipY].Status =
-                    enemyGrid.Squares[enemyShipX, enemyShipY].Status = SquareStatus.Ship;
+                square.Status = SquareStatus.Ship;
             }
-
-            // Todo: Play the game!
         }
     }
 }

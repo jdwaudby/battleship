@@ -8,6 +8,7 @@ namespace Battleship.Library.Services.Interfaces
     {
         Grid Create(int width, int height);
         IEnumerable<Point> GetShipPositions(Grid grid);
+        Square GetSquare(Grid grid, Point point);
         void SetRandomShipPositions(Grid grid, int ships);
         IEnumerable<Point> GetValidTargets(Grid grid);
         bool Attack(Grid grid, Point target);

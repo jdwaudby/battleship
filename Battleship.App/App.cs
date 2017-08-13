@@ -51,33 +51,33 @@ namespace Battleship.App
             {
                 for (int i = 0; i < ships; i++)
                 {
+                    Console.WriteLine();
+
                     var shipPositions = _gridService.GetShipPositions(playerGrid);
                     foreach (Point shipPosition in shipPositions)
-                    {
+                    {                        
                         Console.WriteLine($"Ship at {shipPosition.X},{shipPosition.Y}");
                     }
 
-                    Console.WriteLine($"Please enter ship {i} co-ords:");
-                    input = Console.ReadLine();
-
-                    var inputCoords = input.Split(',');
-                    int x = int.Parse(inputCoords[0]);
-                    int y = int.Parse(inputCoords[1]);
-
-                    // Todo: Check co-ords are within the grid boundaries.
-
-                    Square square = playerGrid.Squares[x, y];
-                    while (square.Status == SquareStatus.Ship)
+                    Square square = null;
+                    while (square == null)
                     {
-                        Console.WriteLine($"Ship already at position {x},{y}");
-                        Console.WriteLine($"Please enter ship {i} co-ords:");
-                        input = Console.ReadLine();
+                        Console.WriteLine();
+                        Console.WriteLine($"Ship {i}");
 
-                        inputCoords = input.Split(',');
-                        x = int.Parse(inputCoords[0]);
-                        y = int.Parse(inputCoords[1]);
+                        Point coords = RequestCoordinates();
+                        square = _gridService.GetSquare(playerGrid, coords);
 
-                        square = playerGrid.Squares[x, y];
+                        if (square == null)
+                        {
+                            Console.WriteLine($"{coords.X},{coords.Y} outside bounds of the grid");
+                            continue;
+                        }
+
+                        if (square.Status != SquareStatus.Ship) continue;
+
+                        Console.WriteLine($"Ship already at position {coords.X},{coords.Y}");
+                        square = null;
                     }
 
                     square.Status = SquareStatus.Ship;
@@ -125,6 +125,18 @@ namespace Battleship.App
             Console.WriteLine();
             Console.WriteLine("Thanks for playing!");
             Console.ReadLine();
+        }
+
+        private static Point RequestCoordinates()
+        {
+            Console.WriteLine("Please enter ship co-ords:");
+            string input = Console.ReadLine();
+
+            var inputCoords = input.Split(',');
+            int x = int.Parse(inputCoords[0]);
+            int y = int.Parse(inputCoords[1]);
+
+            return new Point(x, y);
         }
     }
 }

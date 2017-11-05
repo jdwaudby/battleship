@@ -84,6 +84,12 @@ namespace Battleship.App
                 }
             }
 
+            Console.WriteLine();
+            Console.WriteLine("Target ships randomly:");
+            input = Console.ReadLine();
+
+            bool autoTargetShips = bool.Parse(input);
+
             var rand = new Random();
             bool playersTurn = rand.NextDouble() > 0.5;
             string currentPlayer = playersTurn ? "Player" : "Enemy";
@@ -101,8 +107,29 @@ namespace Battleship.App
 
                 var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
-                // Todo: Allow player to select their own target.
-                Point selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
+                Point selectedTarget;
+                if (autoTargetShips || !playersTurn)
+                {
+                    selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
+                }
+                else
+                {
+                    bool validTarget = false;
+                    while (!validTarget)
+                    {
+                        selectedTarget = RequestCoordinates();
+
+                        if (validTargets.Contains(selectedTarget))
+                        {
+                            validTarget = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine($"{selectedTarget.X},{selectedTarget.Y} isn't a valid target");
+                        }
+                    }
+                }
 
                 Console.WriteLine($"{currentPlayer} attacks {selectedTarget.X},{selectedTarget.Y}");
 

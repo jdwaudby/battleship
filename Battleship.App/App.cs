@@ -1,9 +1,10 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 
 namespace Battleship.App
 {
@@ -20,52 +21,38 @@ namespace Battleship.App
         {
             Console.WriteLine("Lets play battleship!");
 
-            Console.WriteLine();
-            Console.WriteLine("Please enter a grid size:");
-            string input = Console.ReadLine();
-
             int width, height;
-            width = height = int.Parse(input);
+            width = height = RequestInt("Please enter a grid size:");
+            int shipCount = RequestInt("Please enter no of ships:");
 
             Grid playerGrid = _gridService.Create(width, height);
             Grid enemyGrid = _gridService.Create(width, height);
 
-            Console.WriteLine();
-            Console.WriteLine("Please enter no of ships:");
-            input = Console.ReadLine();
+            _gridService.SetRandomShipPositions(enemyGrid, shipCount);
 
-            int ships = int.Parse(input);
-
-            _gridService.SetRandomShipPositions(enemyGrid, ships);
-
-            Console.WriteLine();
-            Console.WriteLine("Place ships randomly:");
-            input = Console.ReadLine();
-
-            bool autoPositionShips = bool.Parse(input);
+            bool autoPositionShips = RequestBool("Place ships randomly:");
             if (autoPositionShips)
             {
-                _gridService.SetRandomShipPositions(playerGrid, ships);
+                _gridService.SetRandomShipPositions(playerGrid, shipCount);
             }
             else
             {
-                for (int i = 0; i < ships; i++)
+                for (int i = 0; i < shipCount; i++)
                 {
                     Console.WriteLine();
 
-                    var shipPositions = _gridService.GetShipPositions(playerGrid);
+                    IEnumerable<Point> shipPositions = _gridService.GetShipPositions(playerGrid);
                     foreach (Point shipPosition in shipPositions)
-                    {                        
+                    {
                         Console.WriteLine($"Ship at {shipPosition.X},{shipPosition.Y}");
                     }
 
                     Square square = null;
                     while (square == null)
                     {
-                        Console.WriteLine();
                         Console.WriteLine($"Ship {i}");
 
-                        Point coords = RequestCoordinates();
+                        Point coords = RequestPoint($"Please enter ship {i} co-ords:");
                         square = _gridService.GetSquare(playerGrid, coords);
 
                         if (square == null)
@@ -84,11 +71,7 @@ namespace Battleship.App
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Target ships randomly:");
-            input = Console.ReadLine();
-
-            bool autoTargetShips = bool.Parse(input);
+            bool autoTargetShips = RequestBool("Target ships randomly:");
 
             var rand = new Random();
             bool playersTurn = rand.NextDouble() > 0.5;
@@ -105,7 +88,7 @@ namespace Battleship.App
 
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
-                var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+                List<Point> validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
                 Point selectedTarget;
                 if (autoTargetShips || !playersTurn)
@@ -117,7 +100,7 @@ namespace Battleship.App
                     bool validTarget = false;
                     while (!validTarget)
                     {
-                        selectedTarget = RequestCoordinates();
+                        selectedTarget = RequestPoint("Please enter target coordinates:");
 
                         if (validTargets.Contains(selectedTarget))
                         {
@@ -136,7 +119,7 @@ namespace Battleship.App
                 bool hit = _gridService.Attack(targetGrid, selectedTarget);
                 Console.WriteLine(hit ? "KABOOM! Attack successful!" : "Sploosh. Attack unsuccessful.");
 
-                var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
+                IEnumerable<Point> remainingShipPositions = _gridService.GetShipPositions(targetGrid);
                 if (remainingShipPositions.Any())
                 {
                     playersTurn = !playersTurn;
@@ -154,12 +137,30 @@ namespace Battleship.App
             Console.ReadLine();
         }
 
-        private static Point RequestCoordinates()
+        private static string RequestString(string request)
         {
-            Console.WriteLine("Please enter ship co-ords:");
-            string input = Console.ReadLine();
+            Console.WriteLine();
+            Console.WriteLine(request);
+            return Console.ReadLine();
+        }
 
-            var inputCoords = input.Split(',');
+        private static int RequestInt(string request)
+        {
+            string input = RequestString(request);
+            return int.Parse(input);
+        }
+
+        private static bool RequestBool(string request)
+        {
+            string input = RequestString(request);
+            return bool.Parse(input);
+        }
+
+        private static Point RequestPoint(string request)
+        {
+            string input = RequestString(request);
+
+            string[] inputCoords = input.Split(',');
             int x = int.Parse(inputCoords[0]);
             int y = int.Parse(inputCoords[1]);
 

@@ -5,12 +5,25 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 
 namespace Battleship.App
 {
     public class App
     {
         private readonly IGridService _gridService;
+
+        private const char CellLeftTop = '┌';
+        private const char CellRightTop = '┐';
+        private const char CellLeftBottom = '└';
+        private const char CellRightBottom = '┘';
+        private const char CellHorizontalJointTop = '┬';
+        private const char CellHorizontalJointBottom = '┴';
+        private const char CellVerticalJointLeft = '├';
+        private const char CellTJoint = '┼';
+        private const char CellVerticalJointRight = '┤';
+        private const char CellHorizontalLine = '─';
+        private const char CellVerticalLine = '│';
 
         public App(IGridService gridService)
         {
@@ -19,6 +32,7 @@ namespace Battleship.App
 
         public void Start()
         {
+            Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("Lets play battleship!");
 
             int width, height;
@@ -165,6 +179,52 @@ namespace Battleship.App
             int y = int.Parse(inputCoords[1]);
 
             return new Point(x, y);
+        }
+
+        private static void DrawGrid(Grid grid)
+        {
+            int maxX = grid.Squares.GetLength(0);
+            int maxY = grid.Squares.GetLength(1);
+
+            var rows = new List<string>();
+
+            string row0 = "  ";
+            string row1 = $" {CellLeftTop}";
+            string row2 = $"{CellVerticalLine}";
+            string row3 = $" {CellVerticalJointLeft}";
+            string row4 = $" {CellLeftBottom}";
+
+            for (int x = 0; x < maxX; x++)
+            {
+                row0 += $"{x.ToString().Last()} ";
+                row1 += $"{CellHorizontalLine}{CellHorizontalJointTop}";
+                row2 += $" {CellVerticalLine}";
+                row3 += $"{CellHorizontalLine}{CellTJoint}";
+                row4 += $"{CellHorizontalLine}{CellHorizontalJointBottom}";
+            }
+
+            for (int y = 0; y < maxY; y++)
+            {
+                rows.Add(y.ToString().Last() + row2);
+                rows.Add(row3);
+            }
+
+            rows.RemoveAt(rows.Count - 1);
+
+            Console.WriteLine(row0);
+            Console.WriteLine(row1.TrimEnd(CellHorizontalJointTop) + CellRightTop);
+            foreach (string row in rows)
+            {
+                if (row.EndsWith($"{CellTJoint}"))
+                {
+                    Console.WriteLine(row.TrimEnd(CellTJoint) + CellVerticalJointRight);
+                }
+                else
+                {
+                    Console.WriteLine(row);
+                }
+            }
+            Console.WriteLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);
         }
     }
 }

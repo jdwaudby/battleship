@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Battleship.Library.Enums;
+using Battleship.Library.Models;
+using Battleship.Library.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using Battleship.Library.Enums;
-using Battleship.Library.Models;
-using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.Library.Services.Implementations
 {
@@ -86,6 +86,16 @@ namespace Battleship.Library.Services.Implementations
 
             square.Status = SquareStatus.Hit;
             return false;
+        }
+
+        public IEnumerable<Point> GetHitPositions(Grid grid)
+        {
+            return GetPositions(grid, SquareStatus.Hit);
+        }
+
+        public IEnumerable<Point> GetDeadShipPositions(Grid grid)
+        {
+            return GetPositions(grid, SquareStatus.DeadShip);
         }
 
         private static IEnumerable<Point> GetPositions(Grid grid, params SquareStatus[] statuses)

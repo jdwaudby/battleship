@@ -48,18 +48,13 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 _gridService.SetRandomShipPositions(playerGrid, shipCount);
+                DrawGrid(playerGrid, true, false);
             }
             else
             {
                 for (int i = 0; i < shipCount; i++)
                 {
-                    Console.WriteLine();
-
-                    IEnumerable<Point> shipPositions = _gridService.GetShipPositions(playerGrid);
-                    foreach (Point shipPosition in shipPositions)
-                    {
-                        Console.WriteLine($"Ship at {shipPosition.X},{shipPosition.Y}");
-                    }
+                    DrawGrid(playerGrid, true, false);
 
                     Square square = null;
                     while (square == null)
@@ -83,6 +78,8 @@ namespace Battleship.App
 
                     square.Status = SquareStatus.Ship;
                 }
+
+                DrawGrid(playerGrid, true, false);
             }
 
             bool autoTargetShips = RequestBool("Target ships randomly:");
@@ -102,6 +99,7 @@ namespace Battleship.App
 
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
+                DrawGrid(targetGrid, false, true);
                 List<Point> validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
                 Point selectedTarget;
@@ -181,7 +179,7 @@ namespace Battleship.App
             return new Point(x, y);
         }
 
-        private static void DrawGrid(Grid grid)
+        private void DrawGrid(Grid grid, bool displayShips, bool displayResults)
         {
             int maxX = grid.Squares.GetLength(0);
             int maxY = grid.Squares.GetLength(1);
@@ -211,6 +209,22 @@ namespace Battleship.App
 
             rows.RemoveAt(rows.Count - 1);
 
+            if (displayShips)
+            {
+                IEnumerable<Point> shipPositions = _gridService.GetShipPositions(grid);
+                PopulateGrid(rows, shipPositions, 'S');
+            }
+
+            if (displayResults)
+            {
+                IEnumerable<Point> hitPositions = _gridService.GetHitPositions(grid);
+                PopulateGrid(rows, hitPositions, 'M');
+
+                IEnumerable<Point> deadShipPositions = _gridService.GetDeadShipPositions(grid);
+                PopulateGrid(rows, deadShipPositions, 'H');
+            }
+
+            Console.WriteLine();
             Console.WriteLine(row0);
             Console.WriteLine(row1.TrimEnd(CellHorizontalJointTop) + CellRightTop);
             foreach (string row in rows)
@@ -225,6 +239,18 @@ namespace Battleship.App
                 }
             }
             Console.WriteLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);
+        }
+
+        private static void PopulateGrid(IList<string> rows, IEnumerable<Point> points, char value)
+        {
+            foreach (Point point in points)
+            {
+                int rowIndex = point.Y * 2;
+                int charIndex = (point.X + 1) * 2;
+
+                var sb = new StringBuilder(rows[rowIndex]) { [charIndex] = value };
+                rows[rowIndex] = sb.ToString();
+            }
         }
     }
 }

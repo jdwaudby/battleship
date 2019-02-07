@@ -102,7 +102,7 @@ namespace Battleship.App
                 DrawGrid(targetGrid, false, true);
                 List<Point> validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
-                Point selectedTarget;
+                var selectedTarget = new Point();
                 if (autoTargetShips || !playersTurn)
                 {
                     selectedTarget = validTargets[rand.Next(0, validTargets.Count)];

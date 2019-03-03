@@ -1,4 +1,5 @@
 ﻿using Battleship.Library.Enums;
+using Battleship.Library.Formatters;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -181,64 +182,42 @@ namespace Battleship.App
 
         private void DrawGrid(Grid grid, bool displayShips, bool displayResults)
         {
-            int maxX = grid.Squares.GetLength(0);
-            int maxY = grid.Squares.GetLength(1);
-
-            var rows = new List<string>();
-
-            string row0 = "  ";
-            string row1 = $" {CellLeftTop}";
-            string row2 = $"{CellVerticalLine}";
-            string row3 = $" {CellVerticalJointLeft}";
-            string row4 = $" {CellLeftBottom}";
-
-            for (int x = 0; x < maxX; x++)
-            {
-                row0 += $"{x.ToString().Last()} ";
-                row1 += $"{CellHorizontalLine}{CellHorizontalJointTop}";
-                row2 += $" {CellVerticalLine}";
-                row3 += $"{CellHorizontalLine}{CellTJoint}";
-                row4 += $"{CellHorizontalLine}{CellHorizontalJointBottom}";
-            }
-
-            for (int y = 0; y < maxY; y++)
-            {
-                rows.Add(y.ToString().Last() + row2);
-                rows.Add(row3);
-            }
-
-            rows.RemoveAt(rows.Count - 1);
-
-            if (displayShips)
-            {
-                IEnumerable<Point> shipPositions = _gridService.GetShipPositions(grid);
-                PopulateGrid(rows, shipPositions, 'S');
-            }
-
-            if (displayResults)
-            {
-                IEnumerable<Point> hitPositions = _gridService.GetHitPositions(grid);
-                PopulateGrid(rows, hitPositions, 'M');
-
-                IEnumerable<Point> deadShipPositions = _gridService.GetDeadShipPositions(grid);
-                PopulateGrid(rows, deadShipPositions, 'H');
-            }
-
             Console.WriteLine();
-            Console.WriteLine(row0);
-            Console.WriteLine(row1.TrimEnd(CellHorizontalJointTop) + CellRightTop);
-            foreach (string row in rows)
-            {
-                if (row.EndsWith($"{CellTJoint}"))
-                {
-                    Console.WriteLine(row.TrimEnd(CellTJoint) + CellVerticalJointRight);
-                }
-                else
-                {
-                    Console.WriteLine(row);
-                }
-            }
-            Console.WriteLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);
+            Console.WriteLine(string.Format(new GridCustomFormatter(), "{0}", grid));
+
+            //if (displayShips)
+            //{
+            //    IEnumerable<Point> shipPositions = _gridService.GetShipPositions(grid);
+            //    //PopulateGrid(rows, shipPositions, 'S');
+            //    PopulateGrid(sGrid, shipPositions, 'S');
+            //}
+
+            //if (displayResults)
+            //{
+            //    IEnumerable<Point> hitPositions = _gridService.GetHitPositions(grid);
+            //    //PopulateGrid(rows, hitPositions, 'M');
+            //    PopulateGrid(sGrid, hitPositions, 'M');
+
+            //    IEnumerable<Point> deadShipPositions = _gridService.GetDeadShipPositions(grid);
+            //    //PopulateGrid(rows, deadShipPositions, 'H');
+            //    PopulateGrid(sGrid, deadShipPositions, 'H');
+            //}
+
+            //Console.WriteLine();
+            //Console.WriteLine(row0);
+            //Console.WriteLine(row1.TrimEnd(CellHorizontalJointTop) + CellRightTop);
+            //foreach (string row in rows)
+            //{
+            //    if (row.EndsWith($"{CellTJoint}"))
+            //    {
+            //        Console.WriteLine(row.TrimEnd(CellTJoint) + CellVerticalJointRight);
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine(row);
+            //    }
+            //}
+            //Console.WriteLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);
         }
 
         private static void PopulateGrid(IList<string> rows, IEnumerable<Point> points, char value)

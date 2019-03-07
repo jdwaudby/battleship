@@ -1,4 +1,4 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 using Battleship.Library.Formatters;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
@@ -182,9 +182,6 @@ namespace Battleship.App
 
         private void DrawGrid(Grid grid, bool displayShips, bool displayResults)
         {
-            Console.WriteLine();
-            Console.WriteLine(string.Format(new GridCustomFormatter(), "{0}", grid));
-
             //if (displayShips)
             //{
             //    IEnumerable<Point> shipPositions = _gridService.GetShipPositions(grid);

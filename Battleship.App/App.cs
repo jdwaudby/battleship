@@ -1,5 +1,4 @@
-using Battleship.Library.Enums;
-using Battleship.Library.Formatters;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -13,18 +12,6 @@ namespace Battleship.App
     public class App
     {
         private readonly IGridService _gridService;
-
-        private const char CellLeftTop = '┌';
-        private const char CellRightTop = '┐';
-        private const char CellLeftBottom = '└';
-        private const char CellRightBottom = '┘';
-        private const char CellHorizontalJointTop = '┬';
-        private const char CellHorizontalJointBottom = '┴';
-        private const char CellVerticalJointLeft = '├';
-        private const char CellTJoint = '┼';
-        private const char CellVerticalJointRight = '┤';
-        private const char CellHorizontalLine = '─';
-        private const char CellVerticalLine = '│';
 
         public App(IGridService gridService)
         {
@@ -49,13 +36,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 _gridService.SetRandomShipPositions(playerGrid, shipCount);
-                DrawGrid(playerGrid, true, false);
+
+                Console.WriteLine();
+                Console.WriteLine("{0:Positioning}", playerGrid);
             }
             else
             {
                 for (int i = 0; i < shipCount; i++)
                 {
-                    DrawGrid(playerGrid, true, false);
+                    Console.WriteLine();
+                    Console.WriteLine("{0:Positioning}", playerGrid);
 
                     Square square = null;
                     while (square == null)
@@ -71,7 +61,10 @@ namespace Battleship.App
                             continue;
                         }
 
-                        if (square.Status != SquareStatus.Ship) continue;
+                        if (square.Status != SquareStatus.Ship)
+                        {
+                            continue;
+                        }
 
                         Console.WriteLine($"Ship already at position {coords.X},{coords.Y}");
                         square = null;
@@ -80,7 +73,8 @@ namespace Battleship.App
                     square.Status = SquareStatus.Ship;
                 }
 
-                DrawGrid(playerGrid, true, false);
+                Console.WriteLine();
+                Console.WriteLine("{0:Positioning}", playerGrid);
             }
 
             bool autoTargetShips = RequestBool("Target ships randomly:");
@@ -100,7 +94,9 @@ namespace Battleship.App
 
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
-                DrawGrid(targetGrid, false, true);
+                Console.WriteLine();
+                Console.WriteLine("{0:Targetting}", targetGrid);
+
                 List<Point> validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
                 var selectedTarget = new Point();

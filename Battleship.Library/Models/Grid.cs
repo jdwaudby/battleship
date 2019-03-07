@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
 namespace Battleship.Library.Models
 {
-    public class Grid
+    public class Grid : IFormattable
     {
         private const char CellLeftTop = '┌';
         private const char CellRightTop = '┐';
@@ -27,6 +29,16 @@ namespace Battleship.Library.Models
 
         public override string ToString()
         {
+            return ToString("G", CultureInfo.CurrentCulture);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            if (string.IsNullOrEmpty(format))
+            {
+                format = "G";
+            }
+
             int maxX = Squares.GetLength(0);
             int maxY = Squares.GetLength(1);
 

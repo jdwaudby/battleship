@@ -62,10 +62,7 @@ namespace Battleship.Library.Models
             for (int y = 0; y < maxY; y++)
             {
                 rows.Add(y.ToString().Last() + row2);
-                rows.Add(row3);
             }
-
-            rows.RemoveAt(rows.Count - 1);
 
             var sb = new StringBuilder();
 
@@ -74,14 +71,10 @@ namespace Battleship.Library.Models
 
             foreach (string row in rows)
             {
-                if (row.EndsWith($"{CellTJoint}"))
-                {
-                    sb.AppendLine(row.TrimEnd(CellTJoint) + CellVerticalJointRight);
-                }
-                else
-                {
-                    sb.AppendLine(row);
-                }
+                sb.AppendLine(row);
+
+                if (row != rows.Last())
+                    sb.AppendLine(row3.TrimEnd(CellTJoint) + CellVerticalJointRight);
             }
 
             sb.AppendLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);

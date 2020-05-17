@@ -175,54 +175,5 @@ namespace Battleship.App
 
             return new Point(x, y);
         }
-
-        private void DrawGrid(Grid grid, bool displayShips, bool displayResults)
-        {
-            //if (displayShips)
-            //{
-            //    IEnumerable<Point> shipPositions = _gridService.GetShipPositions(grid);
-            //    //PopulateGrid(rows, shipPositions, 'S');
-            //    PopulateGrid(sGrid, shipPositions, 'S');
-            //}
-
-            //if (displayResults)
-            //{
-            //    IEnumerable<Point> hitPositions = _gridService.GetHitPositions(grid);
-            //    //PopulateGrid(rows, hitPositions, 'M');
-            //    PopulateGrid(sGrid, hitPositions, 'M');
-
-            //    IEnumerable<Point> deadShipPositions = _gridService.GetDeadShipPositions(grid);
-            //    //PopulateGrid(rows, deadShipPositions, 'H');
-            //    PopulateGrid(sGrid, deadShipPositions, 'H');
-            //}
-
-            //Console.WriteLine();
-            //Console.WriteLine(row0);
-            //Console.WriteLine(row1.TrimEnd(CellHorizontalJointTop) + CellRightTop);
-            //foreach (string row in rows)
-            //{
-            //    if (row.EndsWith($"{CellTJoint}"))
-            //    {
-            //        Console.WriteLine(row.TrimEnd(CellTJoint) + CellVerticalJointRight);
-            //    }
-            //    else
-            //    {
-            //        Console.WriteLine(row);
-            //    }
-            //}
-            //Console.WriteLine(row4.TrimEnd(CellHorizontalJointBottom) + CellRightBottom);
-        }
-
-        private static void PopulateGrid(IList<string> rows, IEnumerable<Point> points, char value)
-        {
-            foreach (Point point in points)
-            {
-                int rowIndex = point.Y * 2;
-                int charIndex = (point.X + 1) * 2;
-
-                var sb = new StringBuilder(rows[rowIndex]) { [charIndex] = value };
-                rows[rowIndex] = sb.ToString();
-            }
-        }
     }
 }

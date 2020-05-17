@@ -80,11 +80,11 @@ namespace Battleship.Library.Services.Implementations
             Square square = grid.Squares[target.X, target.Y];
             if (square.Status == SquareStatus.Ship)
             {
-                square.Status = SquareStatus.DeadShip;
+                square.Status = SquareStatus.Hit;
                 return true;
             }
 
-            square.Status = SquareStatus.Hit;
+            square.Status = SquareStatus.Miss;
             return false;
         }
 

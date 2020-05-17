@@ -95,7 +95,7 @@ namespace Battleship.App
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
                 Console.WriteLine();
-                Console.WriteLine("{0:Targetting}", targetGrid);
+                Console.WriteLine("{0:Targeting}", targetGrid);
 
                 List<Point> validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 

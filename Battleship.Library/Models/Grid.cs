@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Battleship.Library.Enums;
 
 namespace Battleship.Library.Models
 {
@@ -34,19 +35,22 @@ namespace Battleship.Library.Models
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
-            if (string.IsNullOrEmpty(format))
+            bool positioning = format.Equals("Positioning");
+            bool targeting = format.Equals("Targeting");
+
+            var gridValues = new Dictionary<SquareStatus, string>
             {
-                format = "G";
-            }
+                {SquareStatus.Empty, " "},
+                {SquareStatus.Ship, positioning ? "S" : " "},
+                {SquareStatus.Hit, targeting ? "H" : " "},
+                {SquareStatus.Miss, targeting ? "M" : " "}
+            };
 
             int maxX = Squares.GetLength(0);
             int maxY = Squares.GetLength(1);
 
-            var rows = new List<string>();
-
             string row0 = "  ";
             string row1 = $" {CellLeftTop}";
-            string row2 = $"{CellVerticalLine}";
             string row3 = $" {CellVerticalJointLeft}";
             string row4 = $" {CellLeftBottom}";
 
@@ -54,14 +58,22 @@ namespace Battleship.Library.Models
             {
                 row0 += $"{x.ToString().Last()} ";
                 row1 += $"{CellHorizontalLine}{CellHorizontalJointTop}";
-                row2 += $" {CellVerticalLine}";
                 row3 += $"{CellHorizontalLine}{CellTJoint}";
                 row4 += $"{CellHorizontalLine}{CellHorizontalJointBottom}";
             }
 
+            var rows = new List<string>();
+            
             for (int y = 0; y < maxY; y++)
             {
-                rows.Add(y.ToString().Last() + row2);
+                var row = $"{y.ToString().Last()}{CellVerticalLine}";
+
+                for (int x = 0; x < maxX; x++)
+                {
+                    row += $"{gridValues[Squares[x,y].Status]}{CellVerticalLine}";
+                }
+
+                rows.Add(row);
             }
 
             var sb = new StringBuilder();

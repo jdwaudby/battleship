@@ -4,7 +4,7 @@
     {
         Empty = 0,
         Ship,
-        DeadShip,
-        Hit
+        Hit,
+        Miss
     }
 }

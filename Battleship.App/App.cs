@@ -12,10 +12,12 @@ namespace Battleship.App
     public class App
     {
         private readonly IGridService _gridService;
+        private readonly IShipService _shipService;
 
-        public App(IGridService gridService)
+        public App(IGridService gridService, IShipService shipService)
         {
             _gridService = gridService;
+            _shipService = shipService;
         }
 
         public void Start()
@@ -25,7 +27,11 @@ namespace Battleship.App
 
             do
             {
-                Play();
+                string input = RequestString("Do you want to play a standard or custom game?");
+                if (input.Equals("standard", StringComparison.OrdinalIgnoreCase))
+                    PlayStandardGame();
+                else
+                    PlayCustomGame();
             } while (RequestBool("Do you want to play again?"));
 
             Console.WriteLine();
@@ -33,7 +39,45 @@ namespace Battleship.App
             Console.ReadLine();
         }
 
-        private void Play()
+        private void PlayStandardGame()
+        {
+            Grid playerGrid = _gridService.Create();
+            Grid enemyGrid = _gridService.Create();
+
+            var playerShips = _shipService.Get();
+            var enemyShips = _shipService.Get();
+
+            foreach (Ship enemyShip in enemyShips)
+            {
+                _gridService.SetShipPosition(enemyGrid, enemyShip);
+            }
+            
+            bool autoPositionShips = RequestBool("Position ships randomly:");
+            if (autoPositionShips)
+            {
+                foreach (Ship playerShip in playerShips)
+                {
+                    _gridService.SetShipPosition(playerGrid, playerShip);
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("{0:Positioning}", playerGrid);
+            }
+            else
+            {
+                foreach (Ship playerShip in playerShips)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("{0:Positioning}", playerGrid);
+                    
+                    // Todo: Manually position ship
+                }
+            }
+            
+            // Todo: Play standard game
+        }
+        
+        private void PlayCustomGame()
         {
             int width = RequestInt("Please enter grid width:");
             int height = RequestInt("Please enter grid height:");

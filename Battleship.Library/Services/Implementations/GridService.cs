@@ -1,4 +1,4 @@
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -29,6 +29,44 @@ namespace Battleship.Library.Services.Implementations
             }
 
             return grid;
+        }
+
+        public void SetShipPosition(Grid grid, Ship ship)
+        {
+            var random = new Random();
+
+            int maxX = grid.Squares.GetLength(0);
+            int maxY = grid.Squares.GetLength(1);
+
+            bool isHorizontal = random.Next(0, 2) > 0;
+            if (isHorizontal)
+                maxX -= ship.Length;
+            else
+                maxY -= ship.Length;
+
+            int startX = random.Next(0, maxX);
+            int startY = random.Next(0, maxY);
+            
+            var squares = new List<Square>();
+            do
+            {
+                squares.Clear();
+                for (int i = 0; i < ship.Length; i++)
+                {
+                    int x = startX;
+                    int y = startY;
+
+                    if (isHorizontal)
+                        x += i;
+                    else
+                        y += i;
+                
+                    squares.Add(grid.Squares[x, y]);
+                }
+            } while (squares.Any(x => x.Status == SquareStatus.Ship));
+
+            foreach (Square square in squares)
+                square.Status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
         }
 
         public IEnumerable<Point> GetShipPositions(Grid grid)

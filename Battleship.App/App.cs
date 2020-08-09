@@ -23,8 +23,20 @@ namespace Battleship.App
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("Lets play battleship!");
 
-            int width, height;
-            width = height = RequestInt("Please enter a grid size:");
+            do
+            {
+                Play();
+            } while (RequestBool("Do you want to play again?"));
+
+            Console.WriteLine();
+            Console.WriteLine("Thanks for playing!");
+            Console.ReadLine();
+        }
+
+        private void Play()
+        {
+            int width = RequestInt("Please enter grid width:");
+            int height = RequestInt("Please enter grid height:");
             int shipCount = RequestInt("Please enter no of ships:");
 
             Grid playerGrid = _gridService.Create(width, height);
@@ -140,12 +152,8 @@ namespace Battleship.App
                 Console.WriteLine($"{currentPlayer} wins!");
                 inGame = false;
             }
-
-            Console.WriteLine();
-            Console.WriteLine("Thanks for playing!");
-            Console.ReadLine();
         }
-
+        
         private static string RequestString(string request)
         {
             Console.WriteLine();

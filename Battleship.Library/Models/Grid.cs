@@ -21,7 +21,7 @@ namespace Battleship.Library.Models
         private const char CellHorizontalLine = '─';
         private const char CellVerticalLine = '│';
 
-        public Square[,] Squares { get; protected set; }
+        public Square[,] Squares { get; }
 
         public Grid(int width, int height)
         {
@@ -41,9 +41,14 @@ namespace Battleship.Library.Models
             var gridValues = new Dictionary<SquareStatus, string>
             {
                 {SquareStatus.Empty, " "},
-                {SquareStatus.Ship, positioning ? "S" : " "},
+                {SquareStatus.AircraftCarrier, positioning ? "A" : " "},
+                {SquareStatus.Battleship, positioning ? "B" : " "},
+                {SquareStatus.Cruiser, positioning ? "C" : " "},
+                {SquareStatus.Submarine, positioning ? "S" : " "},
+                {SquareStatus.Destroyer, positioning ? "D" : " "},
                 {SquareStatus.Hit, targeting ? "H" : " "},
-                {SquareStatus.Miss, targeting ? "M" : " "}
+                {SquareStatus.Miss, targeting ? "M" : " "},
+                {SquareStatus.Ship, positioning ? "S" : " "}
             };
 
             int maxX = Squares.GetLength(0);

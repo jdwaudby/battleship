@@ -6,6 +6,7 @@ namespace Battleship.Library.Services.Interfaces
 {
     public interface IGridService
     {
+        Grid Create();
         Grid Create(int width, int height);
         IEnumerable<Point> GetShipPositions(Grid grid);
         Square GetSquare(Grid grid, Point point);

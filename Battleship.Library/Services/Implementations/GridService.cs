@@ -17,6 +17,12 @@ namespace Battleship.Library.Services.Implementations
             _squareService = squareService;
         }
 
+        public Grid Create()
+        {
+            const int size = 10;
+            return Create(size, size);
+        }
+        
         public Grid Create(int width, int height)
         {
             var grid = new Grid(width, height);

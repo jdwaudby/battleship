@@ -1,4 +1,4 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -10,13 +10,6 @@ namespace Battleship.Library.Services.Implementations
 {
     public class GridService : IGridService
     {
-        private readonly ISquareService _squareService;
-
-        public GridService(ISquareService squareService)
-        {
-            _squareService = squareService;
-        }
-
         public Grid Create()
         {
             const int size = 10;
@@ -31,7 +24,7 @@ namespace Battleship.Library.Services.Implementations
             {
                 for (int y = 0; y < height; y++)
                 {
-                    grid.Squares[x, y] = _squareService.Create();
+                    grid.Squares[x, y] = new Square();
                 }
             }
 

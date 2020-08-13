@@ -74,7 +74,69 @@ namespace Battleship.App
                 }
             }
             
-            // Todo: Play standard game
+            bool autoTargetShips = RequestBool("Target ships randomly:");
+            
+            var rand = new Random();
+            bool playersTurn = rand.NextDouble() > 0.5;
+            string currentPlayer = playersTurn ? "Player" : "Enemy";
+            
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer} starts.");
+            
+            bool inGame = true;
+            while (inGame)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"{currentPlayer}'s turn.");
+
+                Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
+
+                Console.WriteLine();
+                Console.WriteLine("{0:Targeting}", targetGrid);
+
+                var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+
+                var selectedTarget = new Point();
+                if (autoTargetShips || !playersTurn)
+                {
+                    selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
+                }
+                else
+                {
+                    bool validTarget = false;
+                    while (!validTarget)
+                    {
+                        selectedTarget = RequestPoint("Please enter target coordinates:");
+
+                        if (validTargets.Contains(selectedTarget))
+                        {
+                            validTarget = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine($"{selectedTarget.X},{selectedTarget.Y} isn't a valid target");
+                        }
+                    }
+                }
+
+                Console.WriteLine($"{currentPlayer} attacks {selectedTarget.X},{selectedTarget.Y}");
+
+                bool hit = _gridService.Attack(targetGrid, selectedTarget);
+                Console.WriteLine(hit ? "KABOOM! Attack successful!" : "Sploosh. Attack unsuccessful.");
+
+                var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
+                if (remainingShipPositions.Any())
+                {
+                    playersTurn = !playersTurn;
+                    currentPlayer = playersTurn ? "Player" : "Enemy";
+                    continue;
+                }
+
+                Console.WriteLine();
+                Console.WriteLine($"{currentPlayer} wins!");
+                inGame = false;
+            }
         }
         
         private void PlayCustomGame()

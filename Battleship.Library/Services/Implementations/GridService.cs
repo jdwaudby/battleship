@@ -115,13 +115,13 @@ namespace Battleship.Library.Services.Implementations
 
         public IEnumerable<Point> GetValidTargets(Grid grid)
         {
-            return GetPositions(grid, SquareStatus.Empty, SquareStatus.Ship);
+            return GetPositions(grid, SquareStatus.Ship);
         }
 
         public bool Attack(Grid grid, Point target)
         {
             Square square = grid.Squares[target.X, target.Y];
-            if (square.Status == SquareStatus.Ship)
+            if (square.Status != SquareStatus.Empty && SquareStatus.Ship.HasFlag(square.Status))
             {
                 square.Status = SquareStatus.Hit;
                 return true;
@@ -131,7 +131,7 @@ namespace Battleship.Library.Services.Implementations
             return false;
         }
 
-        private static IEnumerable<Point> GetPositions(Grid grid, params SquareStatus[] statuses)
+        private static IEnumerable<Point> GetPositions(Grid grid, SquareStatus status)
         {
             var positions = new List<Point>();
 
@@ -139,7 +139,8 @@ namespace Battleship.Library.Services.Implementations
             {
                 for (int y = 0; y < grid.Squares.GetLength(1); y++)
                 {
-                    if (statuses.Contains(grid.Squares[x, y].Status))
+                    // Note: This always adds the position when status is Empty
+                    if (status.HasFlag(grid.Squares[x, y].Status))
                         positions.Add(new Point(x, y));
                 }
             }

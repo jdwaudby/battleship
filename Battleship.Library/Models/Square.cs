@@ -4,6 +4,6 @@ namespace Battleship.Library.Models
 {
     public class Square
     {
-        public SquareStatus Status { get; set; }
+        public SquareStatus? Status { get; set; }
     }
 }

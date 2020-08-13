@@ -40,7 +40,6 @@ namespace Battleship.Library.Models
 
             var gridValues = new Dictionary<SquareStatus, string>
             {
-                {SquareStatus.Empty, " "},
                 {SquareStatus.AircraftCarrier, positioning ? "A" : " "},
                 {SquareStatus.Battleship, positioning ? "B" : " "},
                 {SquareStatus.Cruiser, positioning ? "C" : " "},
@@ -71,11 +70,12 @@ namespace Battleship.Library.Models
             
             for (int y = 0; y < maxY; y++)
             {
-                var row = $"{y.ToString().Last()}{VerticalLine}";
+                string row = $"{y.ToString().Last()}{VerticalLine}";
 
                 for (int x = 0; x < maxX; x++)
                 {
-                    row += $"{gridValues[Squares[x,y].Status]}{VerticalLine}";
+                    var squareStatus = Squares[x, y].Status;
+                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{VerticalLine}";
                 }
 
                 rows.Add(row);

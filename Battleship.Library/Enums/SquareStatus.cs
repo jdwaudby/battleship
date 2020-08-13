@@ -5,7 +5,6 @@ namespace Battleship.Library.Enums
     [Flags]
     public enum SquareStatus
     {
-        Empty = 0,
         AircraftCarrier = 1,
         Battleship = 2,
         Cruiser = 4,

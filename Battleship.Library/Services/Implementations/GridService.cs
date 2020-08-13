@@ -69,7 +69,7 @@ namespace Battleship.Library.Services.Implementations
                     
                     squares.Add(grid.Squares[x, y]);
                 }
-            } while (squares.Any(x => x.Status != SquareStatus.Empty));
+            } while (squares.Any(x => x.Status.HasValue));
 
             foreach (Square square in squares)
                 square.Status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
@@ -115,13 +115,15 @@ namespace Battleship.Library.Services.Implementations
 
         public IEnumerable<Point> GetValidTargets(Grid grid)
         {
-            return GetPositions(grid, SquareStatus.Ship);
+            var emptyPositions = GetEmptyPositions(grid);
+            var shipPositions = GetShipPositions(grid);
+            return emptyPositions.Concat(shipPositions);
         }
 
         public bool Attack(Grid grid, Point target)
         {
             Square square = grid.Squares[target.X, target.Y];
-            if (square.Status != SquareStatus.Empty && SquareStatus.Ship.HasFlag(square.Status))
+            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status))
             {
                 square.Status = SquareStatus.Hit;
                 return true;
@@ -139,8 +141,24 @@ namespace Battleship.Library.Services.Implementations
             {
                 for (int y = 0; y < grid.Squares.GetLength(1); y++)
                 {
-                    // Note: This always adds the position when status is Empty
-                    if (status.HasFlag(grid.Squares[x, y].Status))
+                    var squareStatus = grid.Squares[x, y].Status;
+                    if (squareStatus.HasValue && status.HasFlag(squareStatus))
+                        positions.Add(new Point(x, y));
+                }
+            }
+
+            return positions;
+        }
+
+        private static IEnumerable<Point> GetEmptyPositions(Grid grid)
+        {
+            var positions = new List<Point>();
+
+            for (int x = 0; x < grid.Squares.GetLength(0); x++)
+            {
+                for (int y = 0; y < grid.Squares.GetLength(1); y++)
+                {
+                    if (grid.Squares[x, y].Status == null)
                         positions.Add(new Point(x, y));
                 }
             }

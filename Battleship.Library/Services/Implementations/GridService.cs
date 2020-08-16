@@ -1,10 +1,10 @@
-﻿using Battleship.Library.Enums;
-using Battleship.Library.Models;
-using Battleship.Library.Services.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using Battleship.Library.Enums;
+using Battleship.Library.Models;
+using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.Library.Services.Implementations
 {
@@ -34,6 +34,7 @@ namespace Battleship.Library.Services.Implementations
         public void SetShipPosition(Grid grid, Ship ship)
         {
             var random = new Random();
+            Array headings = Enum.GetValues(typeof(Heading));
 
             int maxX = grid.Squares.GetLength(0);
             int maxY = grid.Squares.GetLength(1);
@@ -44,29 +45,89 @@ namespace Battleship.Library.Services.Implementations
                 squares.Clear();
                 
                 int startX, startY;
-                
-                bool isHorizontal = random.Next(0, 2) > 0;
-                if (isHorizontal)
+
+                var heading = (Heading) headings.GetValue(random.Next(headings.Length));
+                int xMultiplier = 0;
+                int yMultiplier = 0;
+                switch (heading)
                 {
-                    startX = random.Next(0, maxX - ship.Length);
-                    startY = random.Next(0, maxY);
-                }
-                else
-                {
-                    startX = random.Next(0, maxX);
-                    startY = random.Next(0, maxY - ship.Length);
+                    case Heading.North:
+                        startX = random.Next(0, maxX);
+                        startY = random.Next(0, maxY - ship.Length);
+                        yMultiplier = 1;
+                        break;
+                    case Heading.South:
+                        startX = random.Next(0, maxX);
+                        startY = random.Next(ship.Length, maxY);
+                        yMultiplier = -1;
+                        break;
+                    case Heading.East:
+                        startX = random.Next(ship.Length, maxX);
+                        startY = random.Next(0, maxY);
+                        xMultiplier = -1;
+                        break;
+                    case Heading.West:
+                        startX = random.Next(0, maxX - ship.Length);
+                        startY = random.Next(0, maxY);
+                        xMultiplier = 1;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
                 for (int i = 0; i < ship.Length; i++)
                 {
-                    int x = startX;
-                    int y = startY;
+                    int x = startX + i * xMultiplier;
+                    int y = startY + i * yMultiplier;
 
-                    if (isHorizontal)
-                        x += i;
-                    else
-                        y += i;
+                    squares.Add(grid.Squares[x, y]);
+                }
+            } while (squares.Any(x => x.Status.HasValue));
+
+            foreach (Square square in squares)
+            {
+                if (ship.Type == ShipType.Custom)
+                {
+                    square.Status = SquareStatus.Ship;
+                    continue;
+                }
                     
+                square.Status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+            }
+        }
+
+        public void SetShipPosition(Grid grid, Ship ship, Point position, Heading heading)
+        {
+            var squares = new List<Square>();
+            do
+            {
+                squares.Clear();
+
+                int xMultiplier = 0;
+                int yMultiplier = 0;
+                switch (heading)
+                {
+                    case Heading.North:
+                        yMultiplier = 1;
+                        break;
+                    case Heading.South:
+                        yMultiplier = -1;
+                        break;
+                    case Heading.East:
+                        xMultiplier = -1;
+                        break;
+                    case Heading.West:
+                        xMultiplier = 1;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                for (int i = 0; i < ship.Length; i++)
+                {
+                    int x = position.X + i * xMultiplier;
+                    int y = position.Y + i * yMultiplier;
+
                     squares.Add(grid.Squares[x, y]);
                 }
             } while (squares.Any(x => x.Status.HasValue));
@@ -86,39 +147,6 @@ namespace Battleship.Library.Services.Implementations
         public IEnumerable<Point> GetShipPositions(Grid grid)
         {
             return GetPositions(grid, SquareStatus.Ship);
-        }
-
-        public Square GetSquare(Grid grid, Point point)
-        {
-            int maxX = grid.Squares.GetLength(0);
-            int maxY = grid.Squares.GetLength(1);
-
-            if (point.X < maxX || point.Y < maxY)
-                return grid.Squares[point.X, point.Y];
-
-            return null;
-        }
-
-        public void SetRandomShipPositions(Grid grid, int ships)
-        {
-            int maxX = grid.Squares.GetLength(0);
-            int maxY = grid.Squares.GetLength(1);
-
-            var rand = new Random();
-            for (int i = 0; i < ships; i++)
-            {
-                int x = rand.Next(0, maxX), y = rand.Next(0, maxY);
-
-                Square square = grid.Squares[x, y];
-                while (square.Status == SquareStatus.Ship)
-                {
-                    x = rand.Next(0, maxX);
-                    y = rand.Next(0, maxY);
-                    square = grid.Squares[x, y];
-                }
-
-                square.Status = SquareStatus.Ship;
-            }
         }
 
         public IEnumerable<Point> GetValidTargets(Grid grid)

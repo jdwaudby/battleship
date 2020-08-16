@@ -1,4 +1,4 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -29,23 +29,26 @@ namespace Battleship.App
             {
                 Grid playerGrid, enemyGrid;
 
-                string input = RequestString("Do you want to play a standard or custom game?");
-                if (input.Equals("standard", StringComparison.OrdinalIgnoreCase))
+                var gameType = RequestEnum<GameType>("Do you want to play a standard or custom game?");
+                switch (gameType)
                 {
-                    playerGrid = _gridService.Create();
-                    enemyGrid = _gridService.Create();
+                    case GameType.Standard:
+                        playerGrid = _gridService.Create();
+                        enemyGrid = _gridService.Create();
 
-                    SetUpStandardGame(playerGrid, enemyGrid);
-                }
-                else
-                {
-                    int width = RequestInt("Please enter grid width:");
-                    int height = RequestInt("Please enter grid height:");
+                        SetUpStandardGame(playerGrid, enemyGrid);
+                        break;
+                    case GameType.Custom:
+                        int width = RequestInt("Please enter grid width:");
+                        int height = RequestInt("Please enter grid height:");
 
-                    playerGrid = _gridService.Create(width, height);
-                    enemyGrid = _gridService.Create(width, height);
+                        playerGrid = _gridService.Create(width, height);
+                        enemyGrid = _gridService.Create(width, height);
 
-                    SetUpCustomGame(playerGrid, enemyGrid);
+                        SetUpCustomGame(playerGrid, enemyGrid);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
                 PlayGame(playerGrid, enemyGrid);
@@ -106,12 +109,7 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (CustomShip playerShip in playerShips)
-                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
-                }
-
-                Console.WriteLine();
-                Console.WriteLine("{0:Positioning}", playerGrid);
             }
             else
             {
@@ -149,6 +147,9 @@ namespace Battleship.App
                 // Console.WriteLine();
                 // Console.WriteLine("{0:Positioning}", playerGrid);
             }
+
+            Console.WriteLine();
+            Console.WriteLine("{0:Positioning}", playerGrid);
         }
 
         private void PlayGame(Grid playerGrid, Grid enemyGrid)
@@ -241,11 +242,17 @@ namespace Battleship.App
         {
             string input = RequestString(request);
 
-            string[] inputCoords = input.Split(',');
+            var inputCoords = input.Split(',');
             int x = int.Parse(inputCoords[0]);
             int y = int.Parse(inputCoords[1]);
 
             return new Point(x, y);
+        }
+
+        private static T RequestEnum<T>(string request) where T : struct
+        {
+            string input = RequestString(request);
+            return Enum.Parse<T>(input, true);
         }
     }
 }

@@ -2,6 +2,7 @@
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -33,17 +34,17 @@ namespace Battleship.App
                 {
                     playerGrid = _gridService.Create();
                     enemyGrid = _gridService.Create();
-                    
+
                     SetUpStandardGame(playerGrid, enemyGrid);
                 }
                 else
                 {
                     int width = RequestInt("Please enter grid width:");
                     int height = RequestInt("Please enter grid height:");
-                    
+
                     playerGrid = _gridService.Create(width, height);
                     enemyGrid = _gridService.Create(width, height);
-                    
+
                     SetUpCustomGame(playerGrid, enemyGrid);
                 }
 
@@ -64,7 +65,7 @@ namespace Battleship.App
             {
                 _gridService.SetShipPosition(enemyGrid, enemyShip);
             }
-            
+
             bool autoPositionShips = RequestBool("Position ships randomly:");
             if (autoPositionShips)
             {
@@ -82,61 +83,71 @@ namespace Battleship.App
                 {
                     Console.WriteLine();
                     Console.WriteLine("{0:Positioning}", playerGrid);
-                    
+
                     // Todo: Manually position ship
                 }
             }
         }
-        
+
         private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
         {
             int shipCount = RequestInt("Please enter no of ships:");
-            
-            _gridService.SetRandomShipPositions(enemyGrid, shipCount);
+
+            var playerShips = new List<CustomShip>();
+            for (int i = 0; i < shipCount; i++)
+            {
+                playerShips.Add(new CustomShip(1));
+
+                var enemyShip = new CustomShip(1);
+                _gridService.SetShipPosition(enemyGrid, enemyShip);
+            }
 
             bool autoPositionShips = RequestBool("Place ships randomly:");
             if (autoPositionShips)
             {
-                _gridService.SetRandomShipPositions(playerGrid, shipCount);
+                foreach (CustomShip playerShip in playerShips)
+                {
+                    _gridService.SetShipPosition(playerGrid, playerShip);
+                }
 
                 Console.WriteLine();
                 Console.WriteLine("{0:Positioning}", playerGrid);
             }
             else
             {
-                for (int i = 0; i < shipCount; i++)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("{0:Positioning}", playerGrid);
-
-                    Square square = null;
-                    while (square == null)
-                    {
-                        Console.WriteLine($"Ship {i}");
-
-                        Point coords = RequestPoint($"Please enter ship {i} co-ords:");
-                        square = _gridService.GetSquare(playerGrid, coords);
-
-                        if (square == null)
-                        {
-                            Console.WriteLine($"{coords.X},{coords.Y} outside bounds of the grid");
-                            continue;
-                        }
-
-                        if (square.Status != SquareStatus.Ship)
-                        {
-                            continue;
-                        }
-
-                        Console.WriteLine($"Ship already at position {coords.X},{coords.Y}");
-                        square = null;
-                    }
-
-                    square.Status = SquareStatus.Ship;
-                }
-
-                Console.WriteLine();
-                Console.WriteLine("{0:Positioning}", playerGrid);
+                // for (int i = 0; i < shipCount; i++)
+                // {
+                //     Console.WriteLine();
+                //     Console.WriteLine("{0:Positioning}", playerGrid);
+                //
+                //     Square square = null;
+                //     while (square == null)
+                //     {
+                //         Console.WriteLine($"Ship {i}");
+                //
+                //         Point coords = RequestPoint($"Please enter ship {i} co-ords:");
+                //         square = _gridService.GetSquare(playerGrid, coords);
+                //
+                //         if (square == null)
+                //         {
+                //             Console.WriteLine($"{coords.X},{coords.Y} outside bounds of the grid");
+                //             continue;
+                //         }
+                //
+                //         if (square.Status != SquareStatus.Ship)
+                //         {
+                //             continue;
+                //         }
+                //
+                //         Console.WriteLine($"Ship already at position {coords.X},{coords.Y}");
+                //         square = null;
+                //     }
+                //
+                //     square.Status = SquareStatus.Ship;
+                // }
+                //
+                // Console.WriteLine();
+                // Console.WriteLine("{0:Positioning}", playerGrid);
             }
         }
 
@@ -206,7 +217,7 @@ namespace Battleship.App
                 inGame = false;
             }
         }
-        
+
         private static string RequestString(string request)
         {
             Console.WriteLine();

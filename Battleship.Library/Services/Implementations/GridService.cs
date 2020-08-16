@@ -72,7 +72,15 @@ namespace Battleship.Library.Services.Implementations
             } while (squares.Any(x => x.Status.HasValue));
 
             foreach (Square square in squares)
+            {
+                if (ship.Type == ShipType.Custom)
+                {
+                    square.Status = SquareStatus.Ship;
+                    continue;
+                }
+                    
                 square.Status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+            }
         }
 
         public IEnumerable<Point> GetShipPositions(Grid grid)

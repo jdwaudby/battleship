@@ -6,6 +6,7 @@
         Battleship,
         Cruiser,
         Submarine,
-        Destroyer
+        Destroyer,
+        Custom
     }
 }

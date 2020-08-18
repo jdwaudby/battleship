@@ -1,4 +1,4 @@
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 using System;
@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using Battleship.Library.Exceptions;
 
 namespace Battleship.App
 {
@@ -73,23 +74,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (Ship playerShip in playerShips)
-                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
-                }
-
-                Console.WriteLine();
-                Console.WriteLine("{0:Positioning}", playerGrid);
             }
             else
             {
                 foreach (Ship playerShip in playerShips)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("{0:Positioning}", playerGrid);
-
-                    // Todo: Manually position ship
-                }
+                    SetShipPositionManually(playerGrid, playerShip);
             }
+            
+            Console.WriteLine();
+            Console.WriteLine("{0:Positioning}", playerGrid);
         }
 
         private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
@@ -105,7 +99,7 @@ namespace Battleship.App
                 _gridService.SetShipPosition(enemyGrid, enemyShip);
             }
 
-            bool autoPositionShips = RequestBool("Place ships randomly:");
+            bool autoPositionShips = RequestBool("Position ships randomly:");
             if (autoPositionShips)
             {
                 foreach (CustomShip playerShip in playerShips)
@@ -113,43 +107,33 @@ namespace Battleship.App
             }
             else
             {
-                // for (int i = 0; i < shipCount; i++)
-                // {
-                //     Console.WriteLine();
-                //     Console.WriteLine("{0:Positioning}", playerGrid);
-                //
-                //     Square square = null;
-                //     while (square == null)
-                //     {
-                //         Console.WriteLine($"Ship {i}");
-                //
-                //         Point coords = RequestPoint($"Please enter ship {i} co-ords:");
-                //         square = _gridService.GetSquare(playerGrid, coords);
-                //
-                //         if (square == null)
-                //         {
-                //             Console.WriteLine($"{coords.X},{coords.Y} outside bounds of the grid");
-                //             continue;
-                //         }
-                //
-                //         if (square.Status != SquareStatus.Ship)
-                //         {
-                //             continue;
-                //         }
-                //
-                //         Console.WriteLine($"Ship already at position {coords.X},{coords.Y}");
-                //         square = null;
-                //     }
-                //
-                //     square.Status = SquareStatus.Ship;
-                // }
-                //
-                // Console.WriteLine();
-                // Console.WriteLine("{0:Positioning}", playerGrid);
+                foreach (CustomShip playerShip in playerShips)
+                    SetShipPositionManually(playerGrid, playerShip);
             }
 
             Console.WriteLine();
             Console.WriteLine("{0:Positioning}", playerGrid);
+        }
+
+        private void SetShipPositionManually(Grid grid, Ship ship)
+        {
+            try
+            {
+                Console.WriteLine();
+                Console.WriteLine("{0:Positioning}", grid);
+
+                Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
+
+                Point coords = RequestPoint("Please enter bow co-ords:");
+                var heading = RequestEnum<Heading>("Please enter a heading:");
+
+                _gridService.SetShipPosition(grid, ship, coords, heading);
+            }
+            catch (ShipPositioningException e)
+            {
+                Console.WriteLine(e.Message);
+                SetShipPositionManually(grid, ship);
+            }
         }
 
         private void PlayGame(Grid playerGrid, Grid enemyGrid)

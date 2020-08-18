@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using Battleship.Library.Enums;
+using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 
@@ -99,38 +100,38 @@ namespace Battleship.Library.Services.Implementations
         public void SetShipPosition(Grid grid, Ship ship, Point position, Heading heading)
         {
             var squares = new List<Square>();
-            do
+
+            int xMultiplier = 0;
+            int yMultiplier = 0;
+            switch (heading)
             {
-                squares.Clear();
+                case Heading.North:
+                    yMultiplier = 1;
+                    break;
+                case Heading.South:
+                    yMultiplier = -1;
+                    break;
+                case Heading.East:
+                    xMultiplier = -1;
+                    break;
+                case Heading.West:
+                    xMultiplier = 1;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
-                int xMultiplier = 0;
-                int yMultiplier = 0;
-                switch (heading)
-                {
-                    case Heading.North:
-                        yMultiplier = 1;
-                        break;
-                    case Heading.South:
-                        yMultiplier = -1;
-                        break;
-                    case Heading.East:
-                        xMultiplier = -1;
-                        break;
-                    case Heading.West:
-                        xMultiplier = 1;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+            for (int i = 0; i < ship.Length; i++)
+            {
+                int x = position.X + i * xMultiplier;
+                int y = position.Y + i * yMultiplier;
 
-                for (int i = 0; i < ship.Length; i++)
-                {
-                    int x = position.X + i * xMultiplier;
-                    int y = position.Y + i * yMultiplier;
+                // Todo: Throw ShipPositioningException when ship position outside bounds of grid
+                squares.Add(grid.Squares[x, y]);
+            }
 
-                    squares.Add(grid.Squares[x, y]);
-                }
-            } while (squares.Any(x => x.Status.HasValue));
+            if (squares.Any(x => x.Status.HasValue))
+                throw new ShipPositioningException("Position already occupied");
 
             foreach (Square square in squares)
             {

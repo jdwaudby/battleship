@@ -99,8 +99,6 @@ namespace Battleship.Library.Services.Implementations
 
         public void SetShipPosition(Grid grid, Ship ship, Point position, Heading heading)
         {
-            var squares = new List<Square>();
-
             int xMultiplier = 0;
             int yMultiplier = 0;
             switch (heading)
@@ -121,12 +119,18 @@ namespace Battleship.Library.Services.Implementations
                     throw new ArgumentOutOfRangeException();
             }
 
+            int maxX = grid.Squares.GetLength(0);
+            int maxY = grid.Squares.GetLength(1);
+            
+            var squares = new List<Square>();
             for (int i = 0; i < ship.Length; i++)
             {
                 int x = position.X + i * xMultiplier;
                 int y = position.Y + i * yMultiplier;
-
-                // Todo: Throw ShipPositioningException when ship position outside bounds of grid
+                
+                if (x < 0 || x >= maxX || y < 0 || y >= maxY)
+                    throw new ShipPositioningException("Position outside grid");
+                
                 squares.Add(grid.Squares[x, y]);
             }
 

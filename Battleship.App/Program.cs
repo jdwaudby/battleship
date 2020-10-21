@@ -20,7 +20,7 @@ namespace Battleship.App
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<IGridService, GridService>();
-            services.AddTransient<ISquareService, SquareService>();
+            services.AddTransient<IShipService, ShipService>();
 
             services.AddSingleton<App>();
         }

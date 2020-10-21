@@ -53,17 +53,17 @@ namespace Battleship.Library.Models
             int maxX = Squares.GetLength(0);
             int maxY = Squares.GetLength(1);
 
-            string row0 = "  ";
-            string row1 = $" {LeftTop}";
-            string row3 = $" {VerticalJointLeft}";
-            string row4 = $" {LeftBottom}";
+            string row0 = $" {LeftTop}";
+            string row2 = $" {VerticalJointLeft}";
+            string row3 = $" {LeftBottom}";
+            string row4 = "  ";
 
             for (int x = 0; x < maxX; x++)
             {
-                row0 += $"{x.ToString().Last()} ";
-                row1 += $"{HorizontalLine}{HorizontalJointTop}";
-                row3 += $"{HorizontalLine}{CentreJoint}";
-                row4 += $"{HorizontalLine}{HorizontalJointBottom}";
+                row0 += $"{HorizontalLine}{HorizontalJointTop}";
+                row2 += $"{HorizontalLine}{CentreJoint}";
+                row3 += $"{HorizontalLine}{HorizontalJointBottom}";
+                row4 += $"{x.ToString().Last()} ";
             }
 
             var rows = new List<string>();
@@ -83,18 +83,18 @@ namespace Battleship.Library.Models
 
             var sb = new StringBuilder();
 
-            sb.AppendLine(row0);
-            sb.AppendLine(row1.TrimEnd(HorizontalJointTop) + RightTop);
+            sb.AppendLine(row0.TrimEnd(HorizontalJointTop) + RightTop);
 
             foreach (string row in rows)
             {
                 sb.AppendLine(row);
 
                 if (row != rows.Last())
-                    sb.AppendLine(row3.TrimEnd(CentreJoint) + VerticalJointRight);
+                    sb.AppendLine(row2.TrimEnd(CentreJoint) + VerticalJointRight);
             }
 
-            sb.AppendLine(row4.TrimEnd(HorizontalJointBottom) + RightBottom);
+            sb.AppendLine(row3.TrimEnd(HorizontalJointBottom) + RightBottom);
+            sb.AppendLine(row4);
 
             return sb.ToString();
         }

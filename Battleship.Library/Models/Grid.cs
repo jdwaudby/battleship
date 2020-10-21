@@ -60,10 +60,12 @@ namespace Battleship.Library.Models
 
             for (int x = 0; x < maxX; x++)
             {
-                row0 += $"{HorizontalLine}{HorizontalJointTop}";
-                row2 += $"{HorizontalLine}{CentreJoint}";
-                row3 += $"{HorizontalLine}{HorizontalJointBottom}";
-                row4 += $"{x.ToString().Last()} ";
+                string coord = (x + 1).ToString();
+                string horizontalLine = new string(HorizontalLine, coord.Length);
+                row0 += $"{horizontalLine}{HorizontalJointTop}";
+                row2 += $"{horizontalLine}{CentreJoint}";
+                row3 += $"{horizontalLine}{HorizontalJointBottom}";
+                row4 += $"{coord} ";
             }
 
             var rows = new List<string>();
@@ -74,8 +76,9 @@ namespace Battleship.Library.Models
 
                 for (int x = 0; x < maxX; x++)
                 {
+                    string padding = new string(' ', (x + 1).ToString().Length - 1);
                     var squareStatus = Squares[x, y].Status;
-                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{VerticalLine}";
+                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{padding}{VerticalLine}";
                 }
 
                 rows.Add(row);

@@ -20,12 +20,22 @@ namespace Battleship.Library.Models
         private const char VerticalJointRight = '┤';
         private const char HorizontalLine = '─';
         private const char VerticalLine = '│';
-
-        public Square[,] Squares { get; }
+        public IReadOnlyList<Square> Squares { get; }
 
         public Grid(int width, int height)
         {
-            Squares = new Square[width, height];
+            var squares = new List<Square>();
+
+            for (int i = 0; i < height; i++)
+            for (int j = 0; j < width; j++)
+            {
+                string y = IntegerToLetterSequence(i);
+                int x = j + 1;
+
+                squares.Add(new Square(y, x));
+            }
+
+            Squares = squares;
         }
 
         public override string ToString()
@@ -50,37 +60,35 @@ namespace Battleship.Library.Models
                 {SquareStatus.Ship, positioning ? "S" : " "}
             };
 
-            int maxX = Squares.GetLength(0);
-            int maxY = Squares.GetLength(1);
-
             string row0 = $" {LeftTop}";
             string row2 = $" {VerticalJointLeft}";
             string row3 = $" {LeftBottom}";
             string row4 = "  ";
 
-            for (int x = 0; x < maxX; x++)
+            foreach (string x in Squares.Select(square => square.X).Distinct())
             {
-                string coord = (x + 1).ToString();
-                string horizontalLine = new string(HorizontalLine, coord.Length);
+                string horizontalLine = new string(HorizontalLine, x.Length);
                 row0 += $"{horizontalLine}{HorizontalJointTop}";
                 row2 += $"{horizontalLine}{CentreJoint}";
                 row3 += $"{horizontalLine}{HorizontalJointBottom}";
-                row4 += $"{coord} ";
+                row4 += $"{x} ";
             }
 
             var rows = new List<string>();
-            
-            for (int y = 0; y < maxY; y++)
-            {
-                string row = $"{y.ToString().Last()}{VerticalLine}";
 
-                for (int x = 0; x < maxX; x++)
+            var squaresGroupedByY = Squares.GroupBy(square => square.Y);
+            foreach (var squareGroup in squaresGroupedByY)
+            {
+                // Todo: Remove .Last()
+                string row = $"{squareGroup.Key.Last()}{VerticalLine}";
+
+                foreach (Square square in squareGroup)
                 {
-                    string padding = new string(' ', (x + 1).ToString().Length - 1);
-                    var squareStatus = Squares[x, y].Status;
+                    string padding = new string(' ', square.X.Length - 1);
+                    var squareStatus = square.Status;
                     row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{padding}{VerticalLine}";
                 }
-
+                
                 rows.Add(row);
             }
 
@@ -100,6 +108,20 @@ namespace Battleship.Library.Models
             sb.AppendLine(row4);
 
             return sb.ToString();
+        }
+
+        private static string IntegerToLetterSequence(int value)
+        {
+            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            
+            string result = "";
+
+            if (value >= letters.Length)
+                result += letters[value / letters.Length - 1];
+
+            result += letters[value % letters.Length];
+
+            return result;
         }
     }
 }

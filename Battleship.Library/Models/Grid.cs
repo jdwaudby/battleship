@@ -60,10 +60,13 @@ namespace Battleship.Library.Models
                 {SquareStatus.Ship, positioning ? "S" : " "}
             };
 
-            string row0 = $" {LeftTop}";
-            string row2 = $" {VerticalJointLeft}";
-            string row3 = $" {LeftBottom}";
-            string row4 = "  ";
+            int yLength = Squares.Select(square => square.Y).Last().Length;
+            string yPadding = new string(' ', yLength);
+
+            string row0 = $"{yPadding}{LeftTop}";
+            string row2 = $"{yPadding}{VerticalJointLeft}";
+            string row3 = $"{yPadding}{LeftBottom}";
+            string row4 = $"{yPadding} ";
 
             foreach (string x in Squares.Select(square => square.X).Distinct())
             {
@@ -79,14 +82,13 @@ namespace Battleship.Library.Models
             var squaresGroupedByY = Squares.GroupBy(square => square.Y);
             foreach (var squareGroup in squaresGroupedByY)
             {
-                // Todo: Remove .Last()
-                string row = $"{squareGroup.Key.Last()}{VerticalLine}";
+                string row = $"{squareGroup.Key.PadLeft(yLength, ' ')}{VerticalLine}";
 
                 foreach (Square square in squareGroup)
                 {
-                    string padding = new string(' ', square.X.Length - 1);
+                    string xPadding = new string(' ', square.X.Length - 1);
                     var squareStatus = square.Status;
-                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{padding}{VerticalLine}";
+                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{xPadding}{VerticalLine}";
                 }
                 
                 rows.Add(row);

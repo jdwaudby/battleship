@@ -24,7 +24,7 @@ namespace Battleship.Library.Services.Implementations
         public void SetShipPosition(Grid grid, Ship ship)
         {
             var random = new Random();
-            Array headings = Enum.GetValues(typeof(Heading));
+            var headings = Enum.GetValues(typeof(Heading)).Cast<Heading>().ToArray();
             var emptySquares = grid.Squares.Where(square => square.Status == null).ToList();
 
             var squares = new List<Square>();
@@ -33,25 +33,8 @@ namespace Battleship.Library.Services.Implementations
                 squares.Clear();
 
                 Square bowSquare = emptySquares[random.Next(emptySquares.Count)];
-                var heading = (Heading) headings.GetValue(random.Next(headings.Length));
-                switch (heading)
-                {
-                    case Heading.North:
-                        squares = grid.Squares.Where(square => square.X == bowSquare.X).ToList();
-                        break;
-                    case Heading.South:
-                        squares = grid.Squares.Where(square => square.X == bowSquare.X).Reverse().ToList();
-                        break;
-                    case Heading.East:
-                        squares = grid.Squares.Where(square => square.Y == bowSquare.Y).Reverse().ToList();
-                        break;
-                    case Heading.West:
-                        squares = grid.Squares.Where(square => square.Y == bowSquare.Y).ToList();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(heading), heading, null);
-                }
-                
+                Heading heading = headings[random.Next(headings.Length)];
+                squares = GetSquares(grid, bowSquare, heading).ToList();
                 int index = squares.IndexOf(bowSquare);
                 try
                 {
@@ -70,7 +53,7 @@ namespace Battleship.Library.Services.Implementations
             }
             else
             {
-                status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
             }
 
             foreach (Square square in squares)
@@ -87,25 +70,7 @@ namespace Battleship.Library.Services.Implementations
                 throw new ShipPositioningException($"Unable to find square at position {bowPosition}");
             }
 
-            List<Square> squares;
-            switch (heading)
-            {
-                case Heading.North:
-                    squares = grid.Squares.Where(square => square.X == bowSquare.X).ToList();
-                    break;
-                case Heading.South:
-                    squares = grid.Squares.Where(square => square.X == bowSquare.X).Reverse().ToList();
-                    break;
-                case Heading.East:
-                    squares = grid.Squares.Where(square => square.Y == bowSquare.Y).Reverse().ToList();
-                    break;
-                case Heading.West:
-                    squares = grid.Squares.Where(square => square.Y == bowSquare.Y).ToList();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(heading), heading, null);
-            }
-
+            var squares = GetSquares(grid, bowSquare, heading).ToList();
             int index = squares.IndexOf(bowSquare);
             squares = squares.GetRange(index, ship.Length);
 
@@ -116,7 +81,7 @@ namespace Battleship.Library.Services.Implementations
             }
             else
             {
-                status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
             }
 
             foreach (Square square in squares)
@@ -159,6 +124,18 @@ namespace Battleship.Library.Services.Implementations
 
             square.Status = SquareStatus.Miss;
             return false;
+        }
+
+        private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)
+        {
+            return heading switch
+            {
+                Heading.North => grid.Squares.Where(square => square.X == bowSquare.X).ToList(),
+                Heading.South => grid.Squares.Where(square => square.X == bowSquare.X).Reverse().ToList(),
+                Heading.East => grid.Squares.Where(square => square.Y == bowSquare.Y).Reverse().ToList(),
+                Heading.West => grid.Squares.Where(square => square.Y == bowSquare.Y).ToList(),
+                _ => throw new ArgumentOutOfRangeException(nameof(heading), heading, null)
+            };
         }
 
         private static IEnumerable<string> GetPositions(Grid grid, SquareStatus status)

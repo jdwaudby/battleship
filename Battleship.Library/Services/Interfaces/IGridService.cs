@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Models;
+using System.Collections.Generic;
 
 namespace Battleship.Library.Services.Interfaces
 {

@@ -20,12 +20,22 @@ namespace Battleship.Library.Models
         private const char VerticalJointRight = '┤';
         private const char HorizontalLine = '─';
         private const char VerticalLine = '│';
-
-        public Square[,] Squares { get; }
+        public IReadOnlyList<Square> Squares { get; }
 
         public Grid(int width, int height)
         {
-            Squares = new Square[width, height];
+            var squares = new List<Square>();
+
+            for (int i = 0; i < height; i++)
+            for (int j = 0; j < width; j++)
+            {
+                string y = IntegerToLetterSequence(i);
+                int x = j + 1;
+
+                squares.Add(new Square(y, x));
+            }
+
+            Squares = squares;
         }
 
         public override string ToString()
@@ -50,53 +60,70 @@ namespace Battleship.Library.Models
                 {SquareStatus.Ship, positioning ? "S" : " "}
             };
 
-            int maxX = Squares.GetLength(0);
-            int maxY = Squares.GetLength(1);
+            int yLength = Squares.Select(square => square.Y).Last().Length;
+            string yPadding = new string(' ', yLength);
 
-            string row0 = "  ";
-            string row1 = $" {LeftTop}";
-            string row3 = $" {VerticalJointLeft}";
-            string row4 = $" {LeftBottom}";
+            string row0 = $"{yPadding}{LeftTop}";
+            string row2 = $"{yPadding}{VerticalJointLeft}";
+            string row3 = $"{yPadding}{LeftBottom}";
+            string row4 = $"{yPadding} ";
 
-            for (int x = 0; x < maxX; x++)
+            foreach (string x in Squares.Select(square => square.X).Distinct())
             {
-                row0 += $"{x.ToString().Last()} ";
-                row1 += $"{HorizontalLine}{HorizontalJointTop}";
-                row3 += $"{HorizontalLine}{CentreJoint}";
-                row4 += $"{HorizontalLine}{HorizontalJointBottom}";
+                string horizontalLine = new string(HorizontalLine, x.Length);
+                row0 += $"{horizontalLine}{HorizontalJointTop}";
+                row2 += $"{horizontalLine}{CentreJoint}";
+                row3 += $"{horizontalLine}{HorizontalJointBottom}";
+                row4 += $"{x} ";
             }
 
             var rows = new List<string>();
-            
-            for (int y = 0; y < maxY; y++)
+
+            var squaresGroupedByY = Squares.GroupBy(square => square.Y);
+            foreach (var squareGroup in squaresGroupedByY)
             {
-                string row = $"{y.ToString().Last()}{VerticalLine}";
+                string row = $"{squareGroup.Key.PadLeft(yLength, ' ')}{VerticalLine}";
 
-                for (int x = 0; x < maxX; x++)
+                foreach (Square square in squareGroup)
                 {
-                    var squareStatus = Squares[x, y].Status;
-                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{VerticalLine}";
+                    string xPadding = new string(' ', square.X.Length - 1);
+                    var squareStatus = square.Status;
+                    row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{xPadding}{VerticalLine}";
                 }
-
+                
                 rows.Add(row);
             }
 
             var sb = new StringBuilder();
 
-            sb.AppendLine(row0);
-            sb.AppendLine(row1.TrimEnd(HorizontalJointTop) + RightTop);
+            sb.AppendLine(row0.TrimEnd(HorizontalJointTop) + RightTop);
 
             foreach (string row in rows)
             {
                 sb.AppendLine(row);
 
                 if (row != rows.Last())
-                    sb.AppendLine(row3.TrimEnd(CentreJoint) + VerticalJointRight);
+                    sb.AppendLine(row2.TrimEnd(CentreJoint) + VerticalJointRight);
             }
 
-            sb.AppendLine(row4.TrimEnd(HorizontalJointBottom) + RightBottom);
+            sb.AppendLine(row3.TrimEnd(HorizontalJointBottom) + RightBottom);
+            sb.AppendLine(row4);
 
             return sb.ToString();
+        }
+
+        private static string IntegerToLetterSequence(int value)
+        {
+            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            
+            string result = "";
+
+            if (value >= letters.Length)
+                result += letters[value / letters.Length - 1];
+
+            result += letters[value % letters.Length];
+
+            return result;
         }
     }
 }

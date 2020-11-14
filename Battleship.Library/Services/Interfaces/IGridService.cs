@@ -10,9 +10,9 @@ namespace Battleship.Library.Services.Interfaces
         Grid Create();
         Grid Create(int width, int height);
         void SetShipPosition(Grid grid, Ship ship);
-        void SetShipPosition(Grid grid, Ship ship, Point position, Heading heading);
-        IEnumerable<Point> GetShipPositions(Grid grid);
-        IEnumerable<Point> GetValidTargets(Grid grid);
-        bool Attack(Grid grid, Point target);
+        void SetShipPosition(Grid grid, Ship ship, string position, Heading heading);
+        IEnumerable<string> GetShipPositions(Grid grid);
+        IEnumerable<string> GetValidTargets(Grid grid);
+        bool Attack(Grid grid, string target);
     }
 }

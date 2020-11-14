@@ -142,7 +142,7 @@ namespace Battleship.Library.Services.Implementations
             var validTargets = GetValidTargets(grid);
             if (!validTargets.Contains(target))
             {
-                throw new ShipTargetingException($"Invalid target");
+                throw new ShipTargetingException("Invalid target");
             }
 
             Square square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);

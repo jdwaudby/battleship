@@ -33,7 +33,7 @@ namespace Battleship.Library.Services.Implementations
                 squares.Clear();
 
                 Square bowSquare = emptySquares[random.Next(emptySquares.Count)];
-                var heading = (Heading) headings.GetValue(random.Next(headings.Length));
+                var heading = (Heading)headings.GetValue(random.Next(headings.Length));
                 switch (heading)
                 {
                     case Heading.North:
@@ -51,7 +51,7 @@ namespace Battleship.Library.Services.Implementations
                     default:
                         throw new ArgumentOutOfRangeException(nameof(heading), heading, null);
                 }
-                
+
                 int index = squares.IndexOf(bowSquare);
                 try
                 {
@@ -70,7 +70,7 @@ namespace Battleship.Library.Services.Implementations
             }
             else
             {
-                status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
             }
 
             foreach (Square square in squares)
@@ -116,7 +116,7 @@ namespace Battleship.Library.Services.Implementations
             }
             else
             {
-                status = (SquareStatus) Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
+                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
             }
 
             foreach (Square square in squares)

@@ -1,7 +1,7 @@
-﻿using Battleship.Library.Services.Implementations;
+﻿using System;
+using Battleship.Library.Services.Implementations;
 using Battleship.Library.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Battleship.App
 {

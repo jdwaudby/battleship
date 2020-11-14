@@ -1,11 +1,11 @@
-﻿using Battleship.Library.Enums;
-using Battleship.Library.Models;
-using Battleship.Library.Services.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
+using Battleship.Library.Models;
+using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.App
 {
@@ -75,12 +75,12 @@ namespace Battleship.App
                 foreach (Ship playerShip in playerShips)
                     SetShipPositionManually(playerGrid, playerShip);
             }
-            
+
             foreach (Ship enemyShip in enemyShips)
             {
                 _gridService.SetShipPosition(enemyGrid, enemyShip);
             }
-            
+
             Console.WriteLine();
             Console.WriteLine("{0:Positioning}", playerGrid);
         }
@@ -88,16 +88,16 @@ namespace Battleship.App
         private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
         {
             int shipCount = RequestInt("Please enter no of ships:");
-            
+
             var playerShips = new List<CustomShip>();
             for (int i = 0; i < shipCount; i++)
             {
                 playerShips.Add(new CustomShip(1));
-            
+
                 var enemyShip = new CustomShip(1);
                 _gridService.SetShipPosition(enemyGrid, enemyShip);
             }
-            
+
             bool autoPositionShips = RequestBool("Position ships randomly:");
             if (autoPositionShips)
             {
@@ -109,7 +109,7 @@ namespace Battleship.App
                 foreach (CustomShip playerShip in playerShips)
                     SetShipPositionManually(playerGrid, playerShip);
             }
-            
+
             Console.WriteLine();
             Console.WriteLine("{0:Positioning}", playerGrid);
         }
@@ -156,9 +156,9 @@ namespace Battleship.App
 
                 Console.WriteLine();
                 Console.WriteLine("{0:Targeting}", targetGrid);
-                
+
                 var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-                
+
                 string selectedTarget = "";
                 if (autoTargetShips || !playersTurn)
                 {

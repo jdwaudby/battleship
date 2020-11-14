@@ -24,7 +24,7 @@ namespace Battleship.Library.Services.Implementations
         public void SetShipPosition(Grid grid, Ship ship)
         {
             var random = new Random();
-            Array headings = Enum.GetValues(typeof(Heading));
+            var headings = Enum.GetValues(typeof(Heading)).Cast<Heading>().ToArray();
             var emptySquares = grid.Squares.Where(square => square.Status == null).ToList();
 
             var squares = new List<Square>();

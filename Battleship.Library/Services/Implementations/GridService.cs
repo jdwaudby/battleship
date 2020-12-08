@@ -116,7 +116,7 @@ namespace Battleship.Library.Services.Implementations
                 throw new ShipTargetingException($"Unable to find square at position {target}");
             }
 
-            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status))
+            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
             {
                 square.Status = SquareStatus.Hit;
                 return true;
@@ -140,7 +140,7 @@ namespace Battleship.Library.Services.Implementations
 
         private static IEnumerable<string> GetPositions(Grid grid, SquareStatus status)
         {
-            return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status))
+            return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status.Value))
                 .Select(square => square.Coordinates);
         }
 

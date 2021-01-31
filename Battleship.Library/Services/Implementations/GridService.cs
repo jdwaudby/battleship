@@ -127,6 +127,12 @@ namespace Battleship.Library.Services.Implementations
             return null;
         }
 
+        public bool HasShipBeenSunk(Grid grid, ShipType shipType)
+        {
+            var status = (SquareStatus)Enum.Parse(typeof(SquareStatus), shipType.ToString());
+            return !GetPositions(grid, status).Any();
+        }
+
         private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)
         {
             return heading switch

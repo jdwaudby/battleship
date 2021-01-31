@@ -13,5 +13,6 @@ namespace Battleship.Library.Services.Interfaces
         IEnumerable<string> GetShipPositions(Grid grid);
         IEnumerable<string> GetValidTargets(Grid grid);
         ShipType? Attack(Grid grid, string target);
+        bool HasShipBeenSunk(Grid grid, ShipType shipType);
     }
 }

@@ -50,14 +50,14 @@ namespace Battleship.Library.Models
 
             var gridValues = new Dictionary<SquareStatus, string>
             {
-                {SquareStatus.AircraftCarrier, positioning ? "A" : " "},
-                {SquareStatus.Battleship, positioning ? "B" : " "},
-                {SquareStatus.Cruiser, positioning ? "C" : " "},
-                {SquareStatus.Submarine, positioning ? "S" : " "},
-                {SquareStatus.Destroyer, positioning ? "D" : " "},
-                {SquareStatus.Hit, targeting ? "H" : " "},
-                {SquareStatus.Miss, targeting ? "M" : " "},
-                {SquareStatus.Ship, positioning ? "S" : " "}
+                {SquareStatus.AircraftCarrier, positioning ? "a" : " "},
+                {SquareStatus.Battleship, positioning ? "b" : " "},
+                {SquareStatus.Cruiser, positioning ? "c" : " "},
+                {SquareStatus.Submarine, positioning ? "s" : " "},
+                {SquareStatus.Destroyer, positioning ? "d" : " "},
+                {SquareStatus.Hit, targeting ? "h" : " "},
+                {SquareStatus.Miss, targeting ? "m" : " "},
+                {SquareStatus.Ship, positioning ? "s" : " "}
             };
 
             int yLength = Squares.Select(square => square.Y).Last().Length;

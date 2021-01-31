@@ -251,7 +251,7 @@ namespace Battleship.App
 
         private static void DrawGrid(Grid grid, string format)
         {
-            const string characters = "ABCDHMS";
+            const string characters = "abcdhms";
 
             string output = grid.ToString(format, CultureInfo.CurrentCulture);
             foreach (char character in output)
@@ -260,8 +260,8 @@ namespace Battleship.App
                 {
                     Console.ForegroundColor = character switch
                     {
-                        'H' => ConsoleColor.Red,
-                        'M' => ConsoleColor.White,
+                        'h' => ConsoleColor.Red,
+                        'm' => ConsoleColor.White,
                         _ => ConsoleColor.Gray
                     };
 

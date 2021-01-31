@@ -12,6 +12,6 @@ namespace Battleship.Library.Services.Interfaces
         void SetShipPosition(Grid grid, Ship ship, string position, Heading heading);
         IEnumerable<string> GetShipPositions(Grid grid);
         IEnumerable<string> GetValidTargets(Grid grid);
-        bool Attack(Grid grid, string target);
+        ShipType? Attack(Grid grid, string target);
     }
 }

@@ -185,8 +185,8 @@ namespace Battleship.App
 
                 Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
 
-                bool hit = _gridService.Attack(targetGrid, selectedTarget);
-                Console.WriteLine(hit ? "KABOOM! Attack successful!" : "Sploosh. Attack unsuccessful.");
+                var shipType = _gridService.Attack(targetGrid, selectedTarget);
+                Console.WriteLine(shipType is not null ? "KABOOM! Attack successful!" : "Sploosh. Attack unsuccessful.");
 
                 var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
                 if (remainingShipPositions.Any())

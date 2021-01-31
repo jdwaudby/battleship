@@ -102,7 +102,7 @@ namespace Battleship.Library.Services.Implementations
             return GetPositions(grid, SquareStatus.Ship);
         }
 
-        public bool Attack(Grid grid, string target)
+        public ShipType? Attack(Grid grid, string target)
         {
             var validTargets = GetValidTargets(grid);
             if (!validTargets.Contains(target))
@@ -118,12 +118,13 @@ namespace Battleship.Library.Services.Implementations
 
             if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
             {
+                var shipType = (ShipType) Enum.Parse(typeof(ShipType), square.Status.Value.ToString());
                 square.Status = SquareStatus.Hit;
-                return true;
+                return shipType;
             }
 
             square.Status = SquareStatus.Miss;
-            return false;
+            return null;
         }
 
         private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)

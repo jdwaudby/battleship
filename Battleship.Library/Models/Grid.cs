@@ -50,18 +50,18 @@ namespace Battleship.Library.Models
 
             var gridValues = new Dictionary<SquareStatus, string>
             {
-                {SquareStatus.AircraftCarrier, positioning ? "A" : " "},
-                {SquareStatus.Battleship, positioning ? "B" : " "},
-                {SquareStatus.Cruiser, positioning ? "C" : " "},
-                {SquareStatus.Submarine, positioning ? "S" : " "},
-                {SquareStatus.Destroyer, positioning ? "D" : " "},
-                {SquareStatus.Hit, targeting ? "H" : " "},
-                {SquareStatus.Miss, targeting ? "M" : " "},
-                {SquareStatus.Ship, positioning ? "S" : " "}
+                {SquareStatus.AircraftCarrier, positioning ? "a" : " "},
+                {SquareStatus.Battleship, positioning ? "b" : " "},
+                {SquareStatus.Cruiser, positioning ? "c" : " "},
+                {SquareStatus.Submarine, positioning ? "s" : " "},
+                {SquareStatus.Destroyer, positioning ? "d" : " "},
+                {SquareStatus.Hit, targeting ? "h" : " "},
+                {SquareStatus.Miss, targeting ? "m" : " "},
+                {SquareStatus.Ship, positioning ? "s" : " "}
             };
 
             int yLength = Squares.Select(square => square.Y).Last().Length;
-            string yPadding = new string(' ', yLength);
+            string yPadding = new(' ', yLength);
 
             string row0 = $"{yPadding}{LeftTop}";
             string row2 = $"{yPadding}{VerticalJointLeft}";
@@ -70,7 +70,7 @@ namespace Battleship.Library.Models
 
             foreach (string x in Squares.Select(square => square.X).Distinct())
             {
-                string horizontalLine = new string(HorizontalLine, x.Length);
+                string horizontalLine = new(HorizontalLine, x.Length);
                 row0 += $"{horizontalLine}{HorizontalJointTop}";
                 row2 += $"{horizontalLine}{CentreJoint}";
                 row3 += $"{horizontalLine}{HorizontalJointBottom}";
@@ -86,7 +86,7 @@ namespace Battleship.Library.Models
 
                 foreach (Square square in squareGroup)
                 {
-                    string xPadding = new string(' ', square.X.Length - 1);
+                    string xPadding = new(' ', square.X.Length - 1);
                     var squareStatus = square.Status;
                     row += $"{(squareStatus.HasValue ? gridValues[squareStatus.Value] : " ")}{xPadding}{VerticalLine}";
                 }

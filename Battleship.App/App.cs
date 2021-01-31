@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Battleship.Library.Enums;
@@ -86,7 +87,7 @@ namespace Battleship.App
             }
 
             Console.WriteLine();
-            Console.WriteLine("{0:Positioning}", playerGrid);
+            DrawGrid(playerGrid, "Positioning");
         }
 
         private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
@@ -119,7 +120,7 @@ namespace Battleship.App
             }
 
             Console.WriteLine();
-            Console.WriteLine("{0:Positioning}", playerGrid);
+            DrawGrid(playerGrid, "Positioning");
         }
 
         private void SetShipPositionManually(Grid grid, Ship ship)
@@ -127,7 +128,7 @@ namespace Battleship.App
             try
             {
                 Console.WriteLine();
-                Console.WriteLine("{0:Positioning}", grid);
+                DrawGrid(grid, "Positioning");
 
                 Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
 
@@ -163,7 +164,7 @@ namespace Battleship.App
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
                 Console.WriteLine();
-                Console.WriteLine("{0:Targeting}", targetGrid);
+                DrawGrid(targetGrid, "Targeting");
 
                 var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
@@ -191,6 +192,7 @@ namespace Battleship.App
                     }
                 }
 
+                Console.WriteLine();
                 Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
 
                 var shipType = _gridService.Attack(targetGrid, selectedTarget);
@@ -245,6 +247,32 @@ namespace Battleship.App
         {
             string input = RequestString(request);
             return Enum.Parse<T>(input, true);
+        }
+
+        private static void DrawGrid(Grid grid, string format)
+        {
+            const string characters = "abcdhms";
+
+            string output = grid.ToString(format, CultureInfo.CurrentCulture);
+            foreach (char character in output)
+            {
+                if (characters.Contains(character))
+                {
+                    Console.ForegroundColor = character switch
+                    {
+                        'h' => ConsoleColor.Red,
+                        'm' => ConsoleColor.White,
+                        _ => ConsoleColor.Gray
+                    };
+
+                    Console.Write('●');
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.Write(character);
+                }
+            }
         }
     }
 }

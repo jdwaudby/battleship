@@ -68,12 +68,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (Ship playerShip in playerShips)
+                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
+                }
             }
             else
             {
                 foreach (Ship playerShip in playerShips)
+                {
                     SetShipPositionManually(playerGrid, playerShip);
+                }
             }
 
             foreach (Ship enemyShip in enemyShips)
@@ -102,12 +106,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (CustomShip playerShip in playerShips)
+                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
+                }
             }
             else
             {
                 foreach (CustomShip playerShip in playerShips)
+                {
                     SetShipPositionManually(playerGrid, playerShip);
+                }
             }
 
             Console.WriteLine();

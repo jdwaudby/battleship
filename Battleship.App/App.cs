@@ -68,12 +68,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (Ship playerShip in playerShips)
+                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
+                }
             }
             else
             {
                 foreach (Ship playerShip in playerShips)
+                {
                     SetShipPositionManually(playerGrid, playerShip);
+                }
             }
 
             foreach (Ship enemyShip in enemyShips)
@@ -102,12 +106,16 @@ namespace Battleship.App
             if (autoPositionShips)
             {
                 foreach (CustomShip playerShip in playerShips)
+                {
                     _gridService.SetShipPosition(playerGrid, playerShip);
+                }
             }
             else
             {
                 foreach (CustomShip playerShip in playerShips)
+                {
                     SetShipPositionManually(playerGrid, playerShip);
+                }
             }
 
             Console.WriteLine();
@@ -185,8 +193,20 @@ namespace Battleship.App
 
                 Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
 
-                bool hit = _gridService.Attack(targetGrid, selectedTarget);
-                Console.WriteLine(hit ? "KABOOM! Attack successful!" : "Sploosh. Attack unsuccessful.");
+                var shipType = _gridService.Attack(targetGrid, selectedTarget);
+                if (shipType is not null)
+                {
+                    Console.WriteLine("KABOOM! Attack successful!");
+
+                    if (_gridService.HasShipBeenSunk(targetGrid, shipType.Value))
+                    {
+                        Console.WriteLine($"You sunk my {shipType}!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Sploosh. Attack unsuccessful.");
+                }
 
                 var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
                 if (remainingShipPositions.Any())

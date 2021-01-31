@@ -18,14 +18,14 @@ namespace Battleship.Library.Services.Implementations
 
         public Grid Create(int width, int height)
         {
-            return new Grid(width, height);
+            return new(width, height);
         }
 
         public void SetShipPosition(Grid grid, Ship ship)
         {
             var random = new Random();
             var headings = Enum.GetValues(typeof(Heading)).Cast<Heading>().ToArray();
-            var emptySquares = grid.Squares.Where(square => square.Status == null).ToList();
+            var emptySquares = grid.Squares.Where(square => square.Status is null).ToList();
 
             var squares = new List<Square>();
             do
@@ -47,7 +47,7 @@ namespace Battleship.Library.Services.Implementations
             } while (!squares.Any() || squares.Any(x => x.Status.HasValue));
 
             SquareStatus status;
-            if (ship.Type == ShipType.Custom)
+            if (ship.Type is ShipType.Custom)
             {
                 status = SquareStatus.Ship;
             }
@@ -65,7 +65,7 @@ namespace Battleship.Library.Services.Implementations
         public void SetShipPosition(Grid grid, Ship ship, string bowPosition, Heading heading)
         {
             Square bowSquare = grid.Squares.SingleOrDefault(square => square.Coordinates == bowPosition);
-            if (bowSquare == null)
+            if (bowSquare is null)
             {
                 throw new ShipPositioningException($"Unable to find square at position {bowPosition}");
             }
@@ -75,7 +75,7 @@ namespace Battleship.Library.Services.Implementations
             squares = squares.GetRange(index, ship.Length);
 
             SquareStatus status;
-            if (ship.Type == ShipType.Custom)
+            if (ship.Type is ShipType.Custom)
             {
                 status = SquareStatus.Ship;
             }
@@ -102,7 +102,7 @@ namespace Battleship.Library.Services.Implementations
             return GetPositions(grid, SquareStatus.Ship);
         }
 
-        public bool Attack(Grid grid, string target)
+        public ShipType? Attack(Grid grid, string target)
         {
             var validTargets = GetValidTargets(grid);
             if (!validTargets.Contains(target))
@@ -111,19 +111,26 @@ namespace Battleship.Library.Services.Implementations
             }
 
             Square square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);
-            if (square == null)
+            if (square is null)
             {
                 throw new ShipTargetingException($"Unable to find square at position {target}");
             }
 
-            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status))
+            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
             {
+                var shipType = (ShipType) Enum.Parse(typeof(ShipType), square.Status.Value.ToString());
                 square.Status = SquareStatus.Hit;
-                return true;
+                return shipType;
             }
 
             square.Status = SquareStatus.Miss;
-            return false;
+            return null;
+        }
+
+        public bool HasShipBeenSunk(Grid grid, ShipType shipType)
+        {
+            var status = (SquareStatus)Enum.Parse(typeof(SquareStatus), shipType.ToString());
+            return !GetPositions(grid, status).Any();
         }
 
         private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)
@@ -140,13 +147,13 @@ namespace Battleship.Library.Services.Implementations
 
         private static IEnumerable<string> GetPositions(Grid grid, SquareStatus status)
         {
-            return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status))
+            return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status.Value))
                 .Select(square => square.Coordinates);
         }
 
         private static IEnumerable<string> GetEmptyPositions(Grid grid)
         {
-            return grid.Squares.Where(square => square.Status == null).Select(square => square.Coordinates);
+            return grid.Squares.Where(square => square.Status is null).Select(square => square.Coordinates);
         }
     }
 }

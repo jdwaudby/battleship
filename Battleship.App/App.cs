@@ -148,6 +148,7 @@ namespace Battleship.App
             var rand = new Random();
             bool playersTurn = rand.NextDouble() > 0.5;
             string currentPlayer = playersTurn ? "Player" : "Enemy";
+            int turnNumber = 0;
 
             Console.WriteLine();
             Console.WriteLine($"{currentPlayer} starts.");
@@ -155,7 +156,10 @@ namespace Battleship.App
             bool inGame = true;
             while (inGame)
             {
+                int roundNumber = turnNumber / 2 + 1;
+
                 Console.WriteLine();
+                Console.WriteLine($"Round {roundNumber}");
                 Console.WriteLine($"{currentPlayer}'s turn.");
 
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
@@ -212,6 +216,7 @@ namespace Battleship.App
                 {
                     playersTurn = !playersTurn;
                     currentPlayer = playersTurn ? "Player" : "Enemy";
+                    turnNumber++;
                     continue;
                 }
 

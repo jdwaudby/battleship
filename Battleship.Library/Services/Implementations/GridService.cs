@@ -135,6 +135,11 @@ namespace Battleship.Library.Services.Implementations
 
         public bool HasShipBeenSunk(Grid grid, ShipType shipType)
         {
+            if (shipType == ShipType.Custom)
+            {
+                return true;
+            }
+
             var status = (SquareStatus)Enum.Parse(typeof(SquareStatus), shipType.ToString());
             return !GetPositions(grid, status).Any();
         }

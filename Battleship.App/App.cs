@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
+using System.Threading;
 using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
@@ -83,8 +84,7 @@ namespace Battleship.App
                 _gridService.SetShipPosition(enemyGrid, enemyShip);
             }
 
-            Console.WriteLine();
-            DrawGrid(playerGrid, "Positioning");
+            DrawPositioningGrid(playerGrid);
         }
 
         private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
@@ -116,16 +116,14 @@ namespace Battleship.App
                 }
             }
 
-            Console.WriteLine();
-            DrawGrid(playerGrid, "Positioning");
+            DrawPositioningGrid(playerGrid);
         }
 
         private void SetShipPositionManually(Grid grid, Ship ship)
         {
             try
             {
-                Console.WriteLine();
-                DrawGrid(grid, "Positioning");
+                DrawPositioningGrid(grid);
 
                 Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
 
@@ -144,6 +142,8 @@ namespace Battleship.App
         private void PlayGame(Grid playerGrid, Grid enemyGrid)
         {
             bool autoTargetShips = RequestBool("Target ships randomly:");
+            int millisecondsTimeout = RequestInt("Please enter how many seconds to wait between actions:") * 1000;
+            bool showContinuePrompt = millisecondsTimeout > 0;
 
             var rand = new Random();
             bool playersTurn = rand.NextDouble() > 0.5;
@@ -158,14 +158,11 @@ namespace Battleship.App
             {
                 int roundNumber = turnNumber / 2 + 1;
 
-                Console.WriteLine();
-                Console.WriteLine($"Round {roundNumber}");
-                Console.WriteLine($"{currentPlayer}'s turn.");
-
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
-                Console.WriteLine();
-                DrawGrid(targetGrid, "Targeting");
+                DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+                
+                Thread.Sleep(millisecondsTimeout);
 
                 var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
 
@@ -195,8 +192,16 @@ namespace Battleship.App
 
                 Console.WriteLine();
                 Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+                Thread.Sleep(millisecondsTimeout);
 
                 var shipType = _gridService.Attack(targetGrid, selectedTarget);
+                
+                DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+
+                Console.WriteLine();
+                Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+                Console.WriteLine();
+
                 if (shipType is not null)
                 {
                     Console.WriteLine("KABOOM! Attack successful!");
@@ -209,6 +214,12 @@ namespace Battleship.App
                 else
                 {
                     Console.WriteLine("Sploosh. Attack unsuccessful.");
+                }
+
+                if (showContinuePrompt)
+                {
+                    Console.WriteLine("Press any key to continue");
+                    Console.ReadLine();
                 }
 
                 var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
@@ -275,6 +286,25 @@ namespace Battleship.App
                     Console.Write(character);
                 }
             }
+        }
+
+        private static void DrawPositioningGrid(Grid grid)
+        {
+            Console.WriteLine();
+            DrawGrid(grid, "Positioning");
+        }
+
+        private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole)
+        {
+            if (clearConsole)
+            {
+                Console.Clear();
+                Console.WriteLine($"Round {roundNumber}");
+                Console.WriteLine($"{currentPlayer}'s turn.");
+            }
+
+            Console.WriteLine();
+            DrawGrid(grid, "Targeting");
         }
     }
 }

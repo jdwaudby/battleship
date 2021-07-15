@@ -151,6 +151,9 @@ namespace Battleship.App
             string currentPlayer = playersTurn ? "Player" : "Enemy";
             int turnNumber = 0;
 
+            var playerLastTarget = "";
+            var enemyLastTarget = "";
+
             Console.WriteLine();
             Console.WriteLine($"{currentPlayer} starts.");
 
@@ -162,18 +165,34 @@ namespace Battleship.App
                 Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
                 DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
-                
-                Thread.Sleep(millisecondsTimeout);
 
-                var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+                Thread.Sleep(millisecondsTimeout);
 
                 string selectedTarget = "";
                 if (autoTargetShips || !playersTurn)
                 {
+                    List<string> validTargets = null;
+
+                    if (playersTurn && !string.IsNullOrEmpty(playerLastTarget))
+                    {
+                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, playerLastTarget).ToList();
+                    }
+                    else if (!string.IsNullOrEmpty(enemyLastTarget))
+                    {
+                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, enemyLastTarget).ToList();
+                    }
+
+                    if (validTargets == null || !validTargets.Any())
+                    {
+                        validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+                    }
+
                     selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
                 }
                 else
                 {
+                    var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+
                     bool validTarget = false;
                     while (!validTarget)
                     {
@@ -196,7 +215,7 @@ namespace Battleship.App
                 Thread.Sleep(millisecondsTimeout);
 
                 var shipType = _gridService.Attack(targetGrid, selectedTarget);
-                
+
                 DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
 
                 Console.WriteLine();
@@ -209,7 +228,27 @@ namespace Battleship.App
 
                     if (_gridService.HasShipBeenSunk(targetGrid, shipType.Value))
                     {
+                        if (playersTurn)
+                        {
+                            playerLastTarget = "";
+                        }
+                        else
+                        {
+                            enemyLastTarget = "";
+                        }
+
                         Console.WriteLine($"You sunk my {shipType}!");
+                    }
+                    else
+                    {
+                        if (playersTurn)
+                        {
+                            playerLastTarget = selectedTarget;
+                        }
+                        else
+                        {
+                            enemyLastTarget = selectedTarget;
+                        }
                     }
                 }
                 else
@@ -264,7 +303,7 @@ namespace Battleship.App
         {
             string input = RequestString(request);
             bool result = Regex.IsMatch(input, "y(es)*|t(rue)*|1", RegexOptions.IgnoreCase);
-            
+
             RewriteLine(result);
 
             return result;
@@ -334,7 +373,7 @@ namespace Battleship.App
         {
             int previousLineCursor = Console.CursorTop - 1;
             Console.SetCursorPosition(0, previousLineCursor);
-            Console.Write(new string(' ', Console.BufferWidth)); 
+            Console.Write(new string(' ', Console.BufferWidth));
             Console.SetCursorPosition(0, previousLineCursor);
             Console.WriteLine(value);
         }

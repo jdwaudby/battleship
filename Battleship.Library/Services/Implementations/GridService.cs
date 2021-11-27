@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;

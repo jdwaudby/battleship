@@ -225,7 +225,7 @@ namespace Battleship.App
         {
             Console.WriteLine();
             Console.WriteLine(request);
-            return Console.ReadLine();
+            return Console.ReadLine() ?? "";
         }
 
         private static int RequestInt(string request)

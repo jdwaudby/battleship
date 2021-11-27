@@ -40,8 +40,10 @@ namespace Battleship.Library.Models
             return ToString("G", CultureInfo.CurrentCulture);
         }
 
-        public string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
+            format = format ?? throw new ArgumentNullException(nameof(format));
+
             bool positioning = format.Equals("Positioning");
             bool targeting = format.Equals("Targeting");
 

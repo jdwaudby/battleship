@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Battleship.Library.Exceptions
+﻿namespace Battleship.Library.Exceptions
 {
     public class ShipPositioningException : Exception
     {

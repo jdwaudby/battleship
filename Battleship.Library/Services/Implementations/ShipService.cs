@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Battleship.Library.Models;
+﻿using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.Library.Services.Implementations

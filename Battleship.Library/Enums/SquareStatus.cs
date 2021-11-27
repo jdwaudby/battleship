@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Battleship.Library.Enums
+﻿namespace Battleship.Library.Enums
 {
     [Flags]
     public enum SquareStatus

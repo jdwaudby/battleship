@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Battleship.Library.Enums;
+﻿using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
@@ -64,7 +61,7 @@ namespace Battleship.Library.Services.Implementations
 
         public void SetShipPosition(Grid grid, Ship ship, string bowPosition, Heading heading)
         {
-            Square bowSquare = grid.Squares.SingleOrDefault(square => square.Coordinates == bowPosition);
+            Square? bowSquare = grid.Squares.SingleOrDefault(square => square.Coordinates == bowPosition);
             if (bowSquare is null)
             {
                 throw new ShipPositioningException($"Unable to find square at position {bowPosition}");
@@ -110,7 +107,7 @@ namespace Battleship.Library.Services.Implementations
                 throw new ShipTargetingException("Invalid target");
             }
 
-            Square square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);
+            Square? square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);
             if (square is null)
             {
                 throw new ShipTargetingException($"Unable to find square at position {target}");

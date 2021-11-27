@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Text;
 using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
@@ -228,7 +225,7 @@ namespace Battleship.App
         {
             Console.WriteLine();
             Console.WriteLine(request);
-            return Console.ReadLine();
+            return Console.ReadLine() ?? "";
         }
 
         private static int RequestInt(string request)

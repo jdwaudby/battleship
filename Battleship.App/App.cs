@@ -171,7 +171,7 @@ namespace Battleship.App
                 string selectedTarget = "";
                 if (autoTargetShips || !playersTurn)
                 {
-                    List<string> validTargets = null;
+                    List<string>? validTargets = null;
 
                     if (playersTurn && !string.IsNullOrEmpty(playerLastTarget))
                     {

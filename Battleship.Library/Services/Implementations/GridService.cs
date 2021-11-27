@@ -105,12 +105,32 @@ namespace Battleship.Library.Services.Implementations
             var xInt = int.Parse(middle.X);
             var yInt = LetterSequenceToInteger(middle.Y);
 
-            squares.Add(grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt + 1)));
-            squares.Add(grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt - 1)));
-            squares.Add(grid.Squares.SingleOrDefault(square => square.X == (xInt - 1).ToString() && square.Y == middle.Y));
-            squares.Add(grid.Squares.SingleOrDefault(square => square.X == (xInt + 1).ToString() && square.Y == middle.Y));
+            var square1 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt + 1));
+            var square2 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt - 1));
+            var square3 = grid.Squares.SingleOrDefault(square => square.X == (xInt - 1).ToString() && square.Y == middle.Y);
+            var square4 = grid.Squares.SingleOrDefault(square => square.X == (xInt + 1).ToString() && square.Y == middle.Y);
 
-            return squares.Where(square => square is not null && (square.Status is null || SquareStatus.Ship.HasFlag(square.Status.Value))).Select(square => square.Coordinates);
+            if (square1 is not null)
+            {
+                squares.Add(square1);
+            }
+            
+            if (square2 is not null)
+            {
+                squares.Add(square2);
+            }
+            
+            if (square3 is not null)
+            {
+                squares.Add(square3);
+            }
+            
+            if (square4 is not null)
+            {
+                squares.Add(square4);
+            }
+
+            return squares.Where(square => square.Status is null || SquareStatus.Ship.HasFlag(square.Status.Value)).Select(square => square.Coordinates);
         }
 
         public IEnumerable<string> GetShipPositions(Grid grid)

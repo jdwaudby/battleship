@@ -150,8 +150,11 @@ namespace Battleship.App
             string currentPlayer = playersTurn ? "Player" : "Enemy";
             int turnNumber = 0;
 
-            var playerLastTarget = "";
-            var enemyLastTarget = "";
+            string playerLastTarget, playerNextYTarget, playerNextXTarget;
+            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
+            
+            string enemyLastTarget, enemyNextYTarget, enemyNextXTarget;
+            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
 
             Console.WriteLine();
             Console.WriteLine($"{currentPlayer} starts.");
@@ -174,17 +177,30 @@ namespace Battleship.App
 
                     if (playersTurn && !string.IsNullOrEmpty(playerLastTarget))
                     {
-                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, playerLastTarget).ToList();
+                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, playerLastTarget, playerNextYTarget, playerNextXTarget).ToList();
+
+                        if (!validTargets.Any())
+                        {
+                            Console.WriteLine("We should be backtrack to the first hit target here!");
+                            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
+
+                            validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+                        }
                     }
                     else if (!string.IsNullOrEmpty(enemyLastTarget))
                     {
-                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, enemyLastTarget).ToList();
+                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, enemyLastTarget, enemyNextYTarget, enemyNextXTarget).ToList();
+
+                        if (!validTargets.Any())
+                        {
+                            Console.WriteLine("We should be backtrack to the first hit target here!");
+                            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
+
+                            validTargets = _gridService.GetValidTargets(targetGrid).ToList();
+                        }
                     }
 
-                    if (validTargets == null || !validTargets.Any())
-                    {
-                        validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-                    }
+                    validTargets ??= _gridService.GetValidTargets(targetGrid).ToList();
 
                     selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
                 }
@@ -229,23 +245,55 @@ namespace Battleship.App
                     {
                         if (playersTurn)
                         {
-                            playerLastTarget = "";
+                            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
                         }
                         else
                         {
-                            enemyLastTarget = "";
+                            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
                         }
 
                         Console.WriteLine($"You sunk my {shipType}!");
                     }
                     else
                     {
+                        var (selectedX, selectedY) = SplitCoordinates(selectedTarget);
+
                         if (playersTurn)
                         {
+                            if (!string.IsNullOrEmpty(playerLastTarget))
+                            {
+                                var (lastX, lastY) = SplitCoordinates(playerLastTarget);
+
+                                if (lastX == selectedX)
+                                {
+                                    playerNextXTarget = selectedX;
+                                }
+
+                                if (lastY == selectedY)
+                                {
+                                    playerNextYTarget = selectedY;
+                                }
+                            }
+
                             playerLastTarget = selectedTarget;
                         }
                         else
                         {
+                            if (!string.IsNullOrEmpty(enemyLastTarget))
+                            {
+                                var (lastX, lastY) = SplitCoordinates(enemyLastTarget);
+
+                                if (lastX == selectedX)
+                                {
+                                    enemyNextXTarget = selectedX;
+                                }
+
+                                if (lastY == selectedY)
+                                {
+                                    enemyNextYTarget = selectedY;
+                                }
+                            }
+
                             enemyLastTarget = selectedTarget;
                         }
                     }
@@ -375,6 +423,13 @@ namespace Battleship.App
             Console.Write(new string(' ', Console.BufferWidth));
             Console.SetCursorPosition(0, previousLineCursor);
             Console.WriteLine(value);
+        }
+
+        private (string x, string y) SplitCoordinates(string coords)
+        {
+            const string pattern = @"(\w+)(\d+)";
+            var match = Regex.Match(coords, pattern);
+            return (match.Groups[2].Value, match.Groups[1].Value);
         }
     }
 }

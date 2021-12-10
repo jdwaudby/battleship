@@ -96,35 +96,51 @@ namespace Battleship.Library.Services.Implementations
             return emptyPositions.Concat(shipPositions);
         }
 
-        public IEnumerable<string> GetValidNeighbouringTargets(Grid grid, string position)
+        public IEnumerable<string> GetValidNeighbouringTargets(Grid grid, string position, string y = "", string x = "")
         {
             var middle = grid.Squares.Single(square => square.Coordinates == position);
 
             var squares = new List<Square>();
 
-            var xInt = int.Parse(middle.X);
-            var yInt = LetterSequenceToInteger(middle.Y);
+            Square? square1, square2, square3, square4;
 
-            var square1 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt + 1));
-            var square2 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt - 1));
-            var square3 = grid.Squares.SingleOrDefault(square => square.X == (xInt - 1).ToString() && square.Y == middle.Y);
-            var square4 = grid.Squares.SingleOrDefault(square => square.X == (xInt + 1).ToString() && square.Y == middle.Y);
+            if (string.IsNullOrEmpty(y))
+            {
+                var yInt = LetterSequenceToInteger(middle.Y);
+                square1 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt + 1));
+                square2 = grid.Squares.SingleOrDefault(square => square.X == middle.X && square.Y == IntegerToLetterSequence(yInt - 1));
+            }
+            else
+            {
+                square1 = square2 = null;
+            }
+
+            if (string.IsNullOrEmpty(x))
+            {
+                var xInt = int.Parse(middle.X);
+                square3 = grid.Squares.SingleOrDefault(square => square.X == (xInt - 1).ToString() && square.Y == middle.Y);
+                square4 = grid.Squares.SingleOrDefault(square => square.X == (xInt + 1).ToString() && square.Y == middle.Y);   
+            }
+            else
+            {
+                square3 = square4 = null;
+            }
 
             if (square1 is not null)
             {
                 squares.Add(square1);
             }
-            
+
             if (square2 is not null)
             {
                 squares.Add(square2);
             }
-            
+
             if (square3 is not null)
             {
                 squares.Add(square3);
             }
-            
+
             if (square4 is not null)
             {
                 squares.Add(square4);
@@ -155,7 +171,7 @@ namespace Battleship.Library.Services.Implementations
             ShipType? shipType = null;
             if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
             {
-                
+
                 if (square.Status.Value == SquareStatus.Ship)
                 {
                     shipType = ShipType.Custom;

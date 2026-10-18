@@ -1,18 +1,11 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 
-namespace Battleship.Library.Models
+namespace Battleship.Library.Models;
+
+public class Square(string y, int x)
 {
-    public class Square
-    {
-        public Square(string y, int x)
-        {
-            Y = y;
-            X = x.ToString();
-        }
-        
-        public string Y { get; }
-        public string X { get; }
-        public string Coordinates => Y + X;
-        public SquareStatus? Status { get; set; }
-    }
+    public string Y { get; } = y;
+    public string X { get; } = x.ToString();
+    public string Coordinates => $"{Y}{X}";
+    public SquareStatus? Status { get; set; }
 }

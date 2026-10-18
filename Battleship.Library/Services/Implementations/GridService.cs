@@ -1,156 +1,140 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 
-namespace Battleship.Library.Services.Implementations
+namespace Battleship.Library.Services.Implementations;
+
+public class GridService : IGridService
 {
-    public class GridService : IGridService
+    public Grid Create()
     {
-        public Grid Create()
-        {
-            const int size = 10;
-            return Create(size, size);
-        }
+        const int size = 10;
+        return Create(size, size);
+    }
 
-        public Grid Create(int width, int height)
-        {
-            return new(width, height);
-        }
+    public Grid Create(int width, int height)
+    {
+        return new(width, height);
+    }
 
-        public void SetShipPosition(Grid grid, Ship ship)
-        {
-            var random = new Random();
-            var headings = Enum.GetValues(typeof(Heading)).Cast<Heading>().ToArray();
-            var emptySquares = grid.Squares.Where(square => square.Status is null).ToList();
+    public void SetShipPosition(Grid grid, Ship ship)
+    {
+        var headings = Enum.GetValues<Heading>();
+        var emptySquares = grid.Squares.Where(square => square.Status is null).ToList();
 
-            var squares = new List<Square>();
-            do
+        List<Square> squares = [];
+        do
+        {
+            squares.Clear();
+
+            Square bowSquare = emptySquares[Random.Shared.Next(emptySquares.Count)];
+            Heading heading = headings[Random.Shared.Next(headings.Length)];
+            squares = [.. GetSquares(grid, bowSquare, heading)];
+            int index = squares.IndexOf(bowSquare);
+            try
+            {
+                squares = squares.GetRange(index, ship.Length);
+            }
+            catch (ArgumentException)
             {
                 squares.Clear();
-
-                Square bowSquare = emptySquares[random.Next(emptySquares.Count)];
-                Heading heading = headings[random.Next(headings.Length)];
-                squares = GetSquares(grid, bowSquare, heading).ToList();
-                int index = squares.IndexOf(bowSquare);
-                try
-                {
-                    squares = squares.GetRange(index, ship.Length);
-                }
-                catch (ArgumentException)
-                {
-                    squares.Clear();
-                }
-            } while (!squares.Any() || squares.Any(x => x.Status.HasValue));
-
-            SquareStatus status;
-            if (ship.Type is ShipType.Custom)
-            {
-                status = SquareStatus.Ship;
             }
-            else
-            {
-                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
-            }
+        } while (squares.Count == 0 || squares.Any(x => x.Status.HasValue));
 
-            foreach (Square square in squares)
-            {
-                square.Status = status;
-            }
-        }
+        SquareStatus status = ship.Type is ShipType.Custom
+            ? SquareStatus.Ship
+            : Enum.Parse<SquareStatus>(ship.Type.ToString());
 
-        public void SetShipPosition(Grid grid, Ship ship, string bowPosition, Heading heading)
+        foreach (Square square in squares)
         {
-            Square? bowSquare = grid.Squares.SingleOrDefault(square => square.Coordinates == bowPosition);
-            if (bowSquare is null)
-            {
-                throw new ShipPositioningException($"Unable to find square at position {bowPosition}");
-            }
-
-            var squares = GetSquares(grid, bowSquare, heading).ToList();
-            int index = squares.IndexOf(bowSquare);
-            squares = squares.GetRange(index, ship.Length);
-
-            SquareStatus status;
-            if (ship.Type is ShipType.Custom)
-            {
-                status = SquareStatus.Ship;
-            }
-            else
-            {
-                status = (SquareStatus)Enum.Parse(typeof(SquareStatus), ship.Type.ToString());
-            }
-
-            foreach (Square square in squares)
-            {
-                square.Status = status;
-            }
+            square.Status = status;
         }
+    }
 
-        public IEnumerable<string> GetValidTargets(Grid grid)
+    public void SetShipPosition(Grid grid, Ship ship, string bowPosition, Heading heading)
+    {
+        Square? bowSquare = grid.Squares.SingleOrDefault(square => square.Coordinates == bowPosition);
+        if (bowSquare is null)
         {
-            var emptyPositions = GetEmptyPositions(grid);
-            var shipPositions = GetShipPositions(grid);
-            return emptyPositions.Concat(shipPositions);
+            throw new ShipPositioningException($"Unable to find square at position {bowPosition}");
         }
 
-        public IEnumerable<string> GetShipPositions(Grid grid)
+        var squares = GetSquares(grid, bowSquare, heading).ToList();
+        int index = squares.IndexOf(bowSquare);
+        squares = squares.GetRange(index, ship.Length);
+
+        SquareStatus status = ship.Type is ShipType.Custom
+            ? SquareStatus.Ship
+            : Enum.Parse<SquareStatus>(ship.Type.ToString());
+
+        foreach (Square square in squares)
         {
-            return GetPositions(grid, SquareStatus.Ship);
+            square.Status = status;
         }
+    }
 
-        public ShipType? Attack(Grid grid, string target)
+    public IEnumerable<string> GetValidTargets(Grid grid)
+    {
+        return [.. GetEmptyPositions(grid), .. GetShipPositions(grid)];
+    }
+
+    public IEnumerable<string> GetShipPositions(Grid grid)
+    {
+        return GetPositions(grid, SquareStatus.Ship);
+    }
+
+    public ShipType? Attack(Grid grid, string target)
+    {
+        var validTargets = GetValidTargets(grid);
+        if (!validTargets.Contains(target))
         {
-            var validTargets = GetValidTargets(grid);
-            if (!validTargets.Contains(target))
-            {
-                throw new ShipTargetingException("Invalid target");
-            }
-
-            Square? square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);
-            if (square is null)
-            {
-                throw new ShipTargetingException($"Unable to find square at position {target}");
-            }
-
-            if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
-            {
-                var shipType = (ShipType) Enum.Parse(typeof(ShipType), square.Status.Value.ToString());
-                square.Status = SquareStatus.Hit;
-                return shipType;
-            }
-
-            square.Status = SquareStatus.Miss;
-            return null;
+            throw new ShipTargetingException("Invalid target");
         }
 
-        public bool HasShipBeenSunk(Grid grid, ShipType shipType)
+        Square? square = grid.Squares.SingleOrDefault(x => x.Coordinates == target);
+        if (square is null)
         {
-            var status = (SquareStatus)Enum.Parse(typeof(SquareStatus), shipType.ToString());
-            return !GetPositions(grid, status).Any();
+            throw new ShipTargetingException($"Unable to find square at position {target}");
         }
 
-        private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)
+        if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
         {
-            return heading switch
-            {
-                Heading.North => grid.Squares.Where(square => square.X == bowSquare.X).ToList(),
-                Heading.South => grid.Squares.Where(square => square.X == bowSquare.X).Reverse().ToList(),
-                Heading.East => grid.Squares.Where(square => square.Y == bowSquare.Y).Reverse().ToList(),
-                Heading.West => grid.Squares.Where(square => square.Y == bowSquare.Y).ToList(),
-                _ => throw new ArgumentOutOfRangeException(nameof(heading), heading, null)
-            };
+            var shipType = Enum.Parse<ShipType>(square.Status.Value.ToString());
+            square.Status = SquareStatus.Hit;
+            return shipType;
         }
 
-        private static IEnumerable<string> GetPositions(Grid grid, SquareStatus status)
-        {
-            return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status.Value))
-                .Select(square => square.Coordinates);
-        }
+        square.Status = SquareStatus.Miss;
+        return null;
+    }
 
-        private static IEnumerable<string> GetEmptyPositions(Grid grid)
+    public bool HasShipBeenSunk(Grid grid, ShipType shipType)
+    {
+        var status = Enum.Parse<SquareStatus>(shipType.ToString());
+        return !GetPositions(grid, status).Any();
+    }
+
+    private static IEnumerable<Square> GetSquares(Grid grid, Square bowSquare, Heading heading)
+    {
+        return heading switch
         {
-            return grid.Squares.Where(square => square.Status is null).Select(square => square.Coordinates);
-        }
+            Heading.North => grid.Squares.Where(square => square.X == bowSquare.X).ToList(),
+            Heading.South => grid.Squares.Where(square => square.X == bowSquare.X).Reverse().ToList(),
+            Heading.East => grid.Squares.Where(square => square.Y == bowSquare.Y).Reverse().ToList(),
+            Heading.West => grid.Squares.Where(square => square.Y == bowSquare.Y).ToList(),
+            _ => throw new ArgumentOutOfRangeException(nameof(heading), heading, null)
+        };
+    }
+
+    private static IEnumerable<string> GetPositions(Grid grid, SquareStatus status)
+    {
+        return grid.Squares.Where(square => square.Status.HasValue && status.HasFlag(square.Status.Value))
+            .Select(square => square.Coordinates);
+    }
+
+    private static IEnumerable<string> GetEmptyPositions(Grid grid)
+    {
+        return grid.Squares.Where(square => square.Status is null).Select(square => square.Coordinates);
     }
 }

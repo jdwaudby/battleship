@@ -1,10 +1,9 @@
-﻿namespace Battleship.Library.Enums
+namespace Battleship.Library.Enums;
+
+public enum Heading
 {
-    public enum Heading
-    {
-        North,
-        South,
-        East,
-        West
-    }
+    North,
+    South,
+    East,
+    West
 }

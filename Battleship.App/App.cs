@@ -1,274 +1,277 @@
-﻿using System.Globalization;
+using System.Buffers;
+using System.Globalization;
 using System.Text;
 using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 
-namespace Battleship.App
+namespace Battleship.App;
+
+public class App(IGridService gridService, IShipService shipService)
 {
-    public class App
+    private static readonly SearchValues<char> GridCharacters = SearchValues.Create("abcdhms");
+
+    public void Start()
     {
-        private readonly IGridService _gridService;
-        private readonly IShipService _shipService;
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine("Lets play battleship!");
 
-        public App(IGridService gridService, IShipService shipService)
+        do
         {
-            _gridService = gridService;
-            _shipService = shipService;
+            Grid playerGrid, enemyGrid;
+
+            var gameType = RequestEnum<GameType>("Do you want to play a standard or custom game?");
+            switch (gameType)
+            {
+                case GameType.Standard:
+                    playerGrid = gridService.Create();
+                    enemyGrid = gridService.Create();
+
+                    SetUpStandardGame(playerGrid, enemyGrid);
+                    break;
+                case GameType.Custom:
+                    int width = RequestInt("Please enter grid width:");
+                    int height = RequestInt("Please enter grid height:");
+
+                    playerGrid = gridService.Create(width, height);
+                    enemyGrid = gridService.Create(width, height);
+
+                    SetUpCustomGame(playerGrid, enemyGrid);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            PlayGame(playerGrid, enemyGrid);
+        } while (RequestBool("Do you want to play again?"));
+
+        Console.WriteLine();
+        Console.WriteLine("Thanks for playing!");
+        Console.ReadLine();
+    }
+
+    private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
+    {
+        var playerShips = shipService.Get();
+        var enemyShips = shipService.Get();
+
+        bool autoPositionShips = RequestBool("Position ships randomly:");
+        if (autoPositionShips)
+        {
+            foreach (Ship playerShip in playerShips)
+            {
+                gridService.SetShipPosition(playerGrid, playerShip);
+            }
+        }
+        else
+        {
+            foreach (Ship playerShip in playerShips)
+            {
+                SetShipPositionManually(playerGrid, playerShip);
+            }
         }
 
-        public void Start()
+        foreach (Ship enemyShip in enemyShips)
         {
-            Console.OutputEncoding = Encoding.UTF8;
-            Console.WriteLine("Lets play battleship!");
+            gridService.SetShipPosition(enemyGrid, enemyShip);
+        }
 
-            do
+        Console.WriteLine();
+        DrawGrid(playerGrid, "Positioning");
+    }
+
+    private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
+    {
+        int shipCount = RequestInt("Please enter no of ships:");
+
+        List<CustomShip> playerShips = [];
+        for (int i = 0; i < shipCount; i++)
+        {
+            playerShips.Add(new CustomShip(1));
+
+            var enemyShip = new CustomShip(1);
+            gridService.SetShipPosition(enemyGrid, enemyShip);
+        }
+
+        bool autoPositionShips = RequestBool("Position ships randomly:");
+        if (autoPositionShips)
+        {
+            foreach (CustomShip playerShip in playerShips)
             {
-                Grid playerGrid, enemyGrid;
+                gridService.SetShipPosition(playerGrid, playerShip);
+            }
+        }
+        else
+        {
+            foreach (CustomShip playerShip in playerShips)
+            {
+                SetShipPositionManually(playerGrid, playerShip);
+            }
+        }
 
-                var gameType = RequestEnum<GameType>("Do you want to play a standard or custom game?");
-                switch (gameType)
-                {
-                    case GameType.Standard:
-                        playerGrid = _gridService.Create();
-                        enemyGrid = _gridService.Create();
+        Console.WriteLine();
+        DrawGrid(playerGrid, "Positioning");
+    }
 
-                        SetUpStandardGame(playerGrid, enemyGrid);
-                        break;
-                    case GameType.Custom:
-                        int width = RequestInt("Please enter grid width:");
-                        int height = RequestInt("Please enter grid height:");
+    private void SetShipPositionManually(Grid grid, Ship ship)
+    {
+        try
+        {
+            Console.WriteLine();
+            DrawGrid(grid, "Positioning");
 
-                        playerGrid = _gridService.Create(width, height);
-                        enemyGrid = _gridService.Create(width, height);
+            Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
 
-                        SetUpCustomGame(playerGrid, enemyGrid);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+            string coords = RequestString("Please enter bow co-ords:");
+            var heading = RequestEnum<Heading>("Please enter a heading:");
 
-                PlayGame(playerGrid, enemyGrid);
-            } while (RequestBool("Do you want to play again?"));
+            gridService.SetShipPosition(grid, ship, coords, heading);
+        }
+        catch (ShipPositioningException e)
+        {
+            Console.WriteLine(e.Message);
+            SetShipPositionManually(grid, ship);
+        }
+    }
+
+    private void PlayGame(Grid playerGrid, Grid enemyGrid)
+    {
+        bool autoTargetShips = RequestBool("Target ships randomly:");
+
+        bool playersTurn = Random.Shared.NextDouble() > 0.5;
+        string currentPlayer = playersTurn ? "Player" : "Enemy";
+
+        Console.WriteLine();
+        Console.WriteLine($"{currentPlayer} starts.");
+
+        bool inGame = true;
+        while (inGame)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer}'s turn.");
+
+            Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
 
             Console.WriteLine();
-            Console.WriteLine("Thanks for playing!");
-            Console.ReadLine();
-        }
+            DrawGrid(targetGrid, "Targeting");
 
-        private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
-        {
-            var playerShips = _shipService.Get();
-            var enemyShips = _shipService.Get();
+            var validTargets = gridService.GetValidTargets(targetGrid).ToList();
 
-            bool autoPositionShips = RequestBool("Position ships randomly:");
-            if (autoPositionShips)
+            string selectedTarget = "";
+            if (autoTargetShips || !playersTurn)
             {
-                foreach (Ship playerShip in playerShips)
+                selectedTarget = validTargets[Random.Shared.Next(validTargets.Count)];
+            }
+            else
+            {
+                bool validTarget = false;
+                while (!validTarget)
                 {
-                    _gridService.SetShipPosition(playerGrid, playerShip);
+                    selectedTarget = RequestString("Please enter target coordinates:");
+
+                    if (validTargets.Contains(selectedTarget))
+                    {
+                        validTarget = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine($"{selectedTarget} isn't a valid target");
+                    }
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+
+            var shipType = gridService.Attack(targetGrid, selectedTarget);
+            if (shipType is not null)
+            {
+                Console.WriteLine("KABOOM! Attack successful!");
+
+                if (gridService.HasShipBeenSunk(targetGrid, shipType.Value))
+                {
+                    Console.WriteLine($"You sunk my {shipType}!");
                 }
             }
             else
             {
-                foreach (Ship playerShip in playerShips)
-                {
-                    SetShipPositionManually(playerGrid, playerShip);
-                }
+                Console.WriteLine("Sploosh. Attack unsuccessful.");
             }
 
-            foreach (Ship enemyShip in enemyShips)
+            if (targetGrid.HasShipsRemaining)
             {
-                _gridService.SetShipPosition(enemyGrid, enemyShip);
+                playersTurn = !playersTurn;
+                currentPlayer = playersTurn ? "Player" : "Enemy";
+                continue;
             }
 
             Console.WriteLine();
-            DrawGrid(playerGrid, "Positioning");
+            Console.WriteLine($"{currentPlayer} wins!");
+            inGame = false;
         }
+    }
 
-        private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
+    private static string RequestString(string request)
+    {
+        Console.WriteLine();
+        Console.WriteLine(request);
+        return Console.ReadLine() ?? "";
+    }
+
+    private static T Request<T>(string request) where T : IParsable<T>
+    {
+        while (true)
         {
-            int shipCount = RequestInt("Please enter no of ships:");
-
-            var playerShips = new List<CustomShip>();
-            for (int i = 0; i < shipCount; i++)
+            string input = RequestString(request);
+            if (T.TryParse(input, CultureInfo.CurrentCulture, out var result))
             {
-                playerShips.Add(new CustomShip(1));
-
-                var enemyShip = new CustomShip(1);
-                _gridService.SetShipPosition(enemyGrid, enemyShip);
+                return result;
             }
 
-            bool autoPositionShips = RequestBool("Position ships randomly:");
-            if (autoPositionShips)
+            Console.WriteLine($"Invalid input '{input}'. Please enter a valid {typeof(T).Name}.");
+        }
+    }
+
+    private static int RequestInt(string request) => Request<int>(request);
+
+    private static bool RequestBool(string request) => Request<bool>(request);
+
+    private static T RequestEnum<T>(string request) where T : struct, Enum
+    {
+        while (true)
+        {
+            string input = RequestString(request);
+            if (Enum.TryParse<T>(input, ignoreCase: true, out var result))
             {
-                foreach (CustomShip playerShip in playerShips)
+                return result;
+            }
+
+            Console.WriteLine($"Invalid option '{input}'. Valid options: {string.Join(", ", Enum.GetNames<T>())}");
+        }
+    }
+
+    private static void DrawGrid(Grid grid, string format)
+    {
+        string output = grid.ToString(format, CultureInfo.CurrentCulture);
+        foreach (char character in output)
+        {
+            if (GridCharacters.Contains(character))
+            {
+                Console.ForegroundColor = character switch
                 {
-                    _gridService.SetShipPosition(playerGrid, playerShip);
-                }
+                    'h' => ConsoleColor.Red,
+                    'm' => ConsoleColor.White,
+                    _ => ConsoleColor.Gray
+                };
+
+                Console.Write('●');
+                Console.ResetColor();
             }
             else
             {
-                foreach (CustomShip playerShip in playerShips)
-                {
-                    SetShipPositionManually(playerGrid, playerShip);
-                }
-            }
-
-            Console.WriteLine();
-            DrawGrid(playerGrid, "Positioning");
-        }
-
-        private void SetShipPositionManually(Grid grid, Ship ship)
-        {
-            try
-            {
-                Console.WriteLine();
-                DrawGrid(grid, "Positioning");
-
-                Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
-
-                string coords = RequestString("Please enter bow co-ords:");
-                var heading = RequestEnum<Heading>("Please enter a heading:");
-
-                _gridService.SetShipPosition(grid, ship, coords, heading);
-            }
-            catch (ShipPositioningException e)
-            {
-                Console.WriteLine(e.Message);
-                SetShipPositionManually(grid, ship);
-            }
-        }
-
-        private void PlayGame(Grid playerGrid, Grid enemyGrid)
-        {
-            bool autoTargetShips = RequestBool("Target ships randomly:");
-
-            var rand = new Random();
-            bool playersTurn = rand.NextDouble() > 0.5;
-            string currentPlayer = playersTurn ? "Player" : "Enemy";
-
-            Console.WriteLine();
-            Console.WriteLine($"{currentPlayer} starts.");
-
-            bool inGame = true;
-            while (inGame)
-            {
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer}'s turn.");
-
-                Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
-
-                Console.WriteLine();
-                DrawGrid(targetGrid, "Targeting");
-
-                var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-
-                string selectedTarget = "";
-                if (autoTargetShips || !playersTurn)
-                {
-                    selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
-                }
-                else
-                {
-                    bool validTarget = false;
-                    while (!validTarget)
-                    {
-                        selectedTarget = RequestString("Please enter target coordinates:");
-
-                        if (validTargets.Contains(selectedTarget))
-                        {
-                            validTarget = true;
-                        }
-                        else
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine($"{selectedTarget} isn't a valid target");
-                        }
-                    }
-                }
-
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
-
-                var shipType = _gridService.Attack(targetGrid, selectedTarget);
-                if (shipType is not null)
-                {
-                    Console.WriteLine("KABOOM! Attack successful!");
-
-                    if (_gridService.HasShipBeenSunk(targetGrid, shipType.Value))
-                    {
-                        Console.WriteLine($"You sunk my {shipType}!");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Sploosh. Attack unsuccessful.");
-                }
-
-                var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
-                if (remainingShipPositions.Any())
-                {
-                    playersTurn = !playersTurn;
-                    currentPlayer = playersTurn ? "Player" : "Enemy";
-                    continue;
-                }
-
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer} wins!");
-                inGame = false;
-            }
-        }
-
-        private static string RequestString(string request)
-        {
-            Console.WriteLine();
-            Console.WriteLine(request);
-            return Console.ReadLine() ?? "";
-        }
-
-        private static int RequestInt(string request)
-        {
-            string input = RequestString(request);
-            return int.Parse(input);
-        }
-
-        private static bool RequestBool(string request)
-        {
-            string input = RequestString(request);
-            return bool.Parse(input);
-        }
-
-        private static T RequestEnum<T>(string request) where T : struct
-        {
-            string input = RequestString(request);
-            return Enum.Parse<T>(input, true);
-        }
-
-        private static void DrawGrid(Grid grid, string format)
-        {
-            const string characters = "abcdhms";
-
-            string output = grid.ToString(format, CultureInfo.CurrentCulture);
-            foreach (char character in output)
-            {
-                if (characters.Contains(character))
-                {
-                    Console.ForegroundColor = character switch
-                    {
-                        'h' => ConsoleColor.Red,
-                        'm' => ConsoleColor.White,
-                        _ => ConsoleColor.Gray
-                    };
-
-                    Console.Write('●');
-                    Console.ResetColor();
-                }
-                else
-                {
-                    Console.Write(character);
-                }
+                Console.Write(character);
             }
         }
     }

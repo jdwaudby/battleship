@@ -1,8 +1,7 @@
-﻿namespace Battleship.Library.Enums
+namespace Battleship.Library.Enums;
+
+public enum GameType
 {
-    public enum GameType
-    {
-        Standard,
-        Custom
-    }
+    Standard,
+    Custom
 }

@@ -1,16 +1,15 @@
-﻿namespace Battleship.Library.Enums
-{
-    [Flags]
-    public enum SquareStatus
-    {
-        AircraftCarrier = 1,
-        Battleship = 2,
-        Cruiser = 4,
-        Submarine = 8,
-        Destroyer = 16,
-        Hit = 32,
-        Miss = 64,
+namespace Battleship.Library.Enums;
 
-        Ship = AircraftCarrier | Battleship | Cruiser | Submarine | Destroyer
-    }
+[Flags]
+public enum SquareStatus
+{
+    AircraftCarrier = 1,
+    Battleship = 2,
+    Cruiser = 4,
+    Submarine = 8,
+    Destroyer = 16,
+    Hit = 32,
+    Miss = 64,
+
+    Ship = AircraftCarrier | Battleship | Cruiser | Submarine | Destroyer
 }

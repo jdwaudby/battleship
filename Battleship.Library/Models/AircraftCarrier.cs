@@ -1,13 +1,5 @@
-﻿using Battleship.Library.Enums;
+using Battleship.Library.Enums;
 
-namespace Battleship.Library.Models
-{
-    public class AircraftCarrier : Ship
-    {
-        public AircraftCarrier()
-        {
-            Type = ShipType.AircraftCarrier;
-            Length = 5;
-        }
-    }
-}
+namespace Battleship.Library.Models;
+
+public class AircraftCarrier() : Ship(ShipType.AircraftCarrier, 5);

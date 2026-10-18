@@ -156,7 +156,7 @@ public class App(IGridService gridService, IShipService shipService)
             Console.WriteLine();
             DrawGrid(targetGrid, "Targeting");
 
-            var validTargets = gridService.GetValidTargets(targetGrid).ToList();
+            var validTargets = targetGrid.ValidTargets.ToList();
 
             string selectedTarget = "";
             if (autoTargetShips || !playersTurn)
@@ -170,7 +170,7 @@ public class App(IGridService gridService, IShipService shipService)
                 {
                     selectedTarget = RequestString("Please enter target coordinates:");
 
-                    if (validTargets.Contains(selectedTarget))
+                    if (targetGrid.IsValidTarget(selectedTarget))
                     {
                         validTarget = true;
                     }

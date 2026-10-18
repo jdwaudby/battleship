@@ -18,11 +18,16 @@ public class Grid : IFormattable
     private const char HorizontalLine = '─';
     private const char VerticalLine = '│';
 
+    private readonly Dictionary<string, Square> _squareLookup;
+
     public IReadOnlyList<Square> Squares { get; }
+
+    public Square? this[string coordinates] => _squareLookup.GetValueOrDefault(coordinates);
 
     public Grid(int width, int height)
     {
         List<Square> squares = [];
+        _squareLookup = new Dictionary<string, Square>(width * height, StringComparer.OrdinalIgnoreCase);
 
         for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
@@ -30,7 +35,9 @@ public class Grid : IFormattable
             string y = IntegerToLetterSequence(i);
             int x = j + 1;
 
-            squares.Add(new Square(y, x));
+            var square = new Square(y, x);
+            squares.Add(square);
+            _squareLookup[square.Coordinates] = square;
         }
 
         Squares = squares;
@@ -48,7 +55,7 @@ public class Grid : IFormattable
         bool positioning = format.Equals("Positioning");
         bool targeting = format.Equals("Targeting");
 
-        int yLength = Squares.Select(square => square.Y).Last().Length;
+        int yLength = Squares[^1].Y.Length;
         string yPadding = new(' ', yLength);
 
         string row0 = $"{yPadding}{LeftTop}";

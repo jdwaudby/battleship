@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+using System.Buffers;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Battleship.Library.Enums;
@@ -6,430 +7,434 @@ using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
 using Battleship.Library.Services.Interfaces;
 
-namespace Battleship.App
+namespace Battleship.App;
+
+public class App(IGridService gridService, IShipService shipService)
 {
-    public class App
+    private static readonly SearchValues<char> GridCharacters = SearchValues.Create("abcdhms");
+
+    public void Start()
     {
-        private readonly IGridService _gridService;
-        private readonly IShipService _shipService;
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine("Lets play battleship!");
 
-        public App(IGridService gridService, IShipService shipService)
+        do
         {
-            _gridService = gridService;
-            _shipService = shipService;
+            Grid playerGrid, enemyGrid;
+
+            var gameType = RequestEnum<GameType>("Do you want to play a standard or custom game?");
+            switch (gameType)
+            {
+                case GameType.Standard:
+                    playerGrid = gridService.Create();
+                    enemyGrid = gridService.Create();
+
+                    SetUpStandardGame(playerGrid, enemyGrid);
+                    break;
+                case GameType.Custom:
+                    int width = RequestInt("Please enter grid width:");
+                    int height = RequestInt("Please enter grid height:");
+
+                    playerGrid = gridService.Create(width, height);
+                    enemyGrid = gridService.Create(width, height);
+
+                    SetUpCustomGame(playerGrid, enemyGrid);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            PlayGame(playerGrid, enemyGrid);
+        } while (RequestBool("Do you want to play again?"));
+
+        Console.WriteLine();
+        Console.WriteLine("Thanks for playing!");
+        Console.ReadLine();
+    }
+
+    private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
+    {
+        var playerShips = shipService.Get();
+        var enemyShips = shipService.Get();
+
+        bool autoPositionShips = RequestBool("Position ships randomly:");
+        if (autoPositionShips)
+        {
+            foreach (Ship playerShip in playerShips)
+            {
+                gridService.SetShipPosition(playerGrid, playerShip);
+            }
+        }
+        else
+        {
+            foreach (Ship playerShip in playerShips)
+            {
+                SetShipPositionManually(playerGrid, playerShip);
+            }
         }
 
-        public void Start()
+        foreach (Ship enemyShip in enemyShips)
         {
-            Console.OutputEncoding = Encoding.UTF8;
-            Console.WriteLine("Lets play battleship!");
-
-            do
-            {
-                Grid playerGrid, enemyGrid;
-
-                var gameType = RequestEnum<GameType>("Do you want to play a standard or custom game?");
-                switch (gameType)
-                {
-                    case GameType.Standard:
-                        playerGrid = _gridService.Create();
-                        enemyGrid = _gridService.Create();
-
-                        SetUpStandardGame(playerGrid, enemyGrid);
-                        break;
-                    case GameType.Custom:
-                        int width = RequestInt("Please enter grid width:");
-                        int height = RequestInt("Please enter grid height:");
-
-                        playerGrid = _gridService.Create(width, height);
-                        enemyGrid = _gridService.Create(width, height);
-
-                        SetUpCustomGame(playerGrid, enemyGrid);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-                PlayGame(playerGrid, enemyGrid);
-            } while (RequestBool("Do you want to play again?"));
-
-            Console.WriteLine();
-            Console.WriteLine("Thanks for playing!");
-            Console.ReadLine();
+            gridService.SetShipPosition(enemyGrid, enemyShip);
         }
 
-        private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
-        {
-            var playerShips = _shipService.Get();
-            var enemyShips = _shipService.Get();
+        DrawPositioningGrid(playerGrid);
+    }
 
-            bool autoPositionShips = RequestBool("Position ships randomly:");
-            if (autoPositionShips)
+    private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
+    {
+        int shipCount = RequestInt("Please enter no of ships:");
+
+        List<CustomShip> playerShips = [];
+        for (int i = 0; i < shipCount; i++)
+        {
+            playerShips.Add(new CustomShip(1));
+
+            var enemyShip = new CustomShip(1);
+            gridService.SetShipPosition(enemyGrid, enemyShip);
+        }
+
+        bool autoPositionShips = RequestBool("Position ships randomly:");
+        if (autoPositionShips)
+        {
+            foreach (CustomShip playerShip in playerShips)
             {
-                foreach (Ship playerShip in playerShips)
-                {
-                    _gridService.SetShipPosition(playerGrid, playerShip);
-                }
+                gridService.SetShipPosition(playerGrid, playerShip);
+            }
+        }
+        else
+        {
+            foreach (CustomShip playerShip in playerShips)
+            {
+                SetShipPositionManually(playerGrid, playerShip);
+            }
+        }
+
+        DrawPositioningGrid(playerGrid);
+    }
+
+    private void SetShipPositionManually(Grid grid, Ship ship)
+    {
+        try
+        {
+            DrawPositioningGrid(grid);
+
+            Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
+
+            string coords = RequestString("Please enter bow co-ords:");
+            var heading = RequestEnum<Heading>("Please enter a heading:");
+
+            gridService.SetShipPosition(grid, ship, coords, heading);
+        }
+        catch (ShipPositioningException e)
+        {
+            Console.WriteLine(e.Message);
+            SetShipPositionManually(grid, ship);
+        }
+    }
+
+    private void PlayGame(Grid playerGrid, Grid enemyGrid)
+    {
+        bool autoTargetShips = RequestBool("Target ships randomly:");
+        int millisecondsTimeout = RequestInt("Please enter how many seconds to wait between actions:") * 1000;
+        bool showContinuePrompt = millisecondsTimeout > 0;
+
+        bool playersTurn = Random.Shared.NextDouble() > 0.5;
+        string currentPlayer = playersTurn ? "Player" : "Enemy";
+        int turnNumber = 0;
+
+        string playerLastTarget = "", playerNextYTarget = "", playerNextXTarget = "";
+        string enemyLastTarget = "", enemyNextYTarget = "", enemyNextXTarget = "";
+
+        Console.WriteLine();
+        Console.WriteLine($"{currentPlayer} starts.");
+
+        bool inGame = true;
+        while (inGame)
+        {
+            int roundNumber = turnNumber / 2 + 1;
+
+            Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
+
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+
+            Thread.Sleep(millisecondsTimeout);
+
+            string selectedTarget = "";
+            if (autoTargetShips || !playersTurn)
+            {
+                selectedTarget = playersTurn
+                    ? SelectAutoTarget(targetGrid, ref playerLastTarget, ref playerNextYTarget, ref playerNextXTarget)
+                    : SelectAutoTarget(targetGrid, ref enemyLastTarget, ref enemyNextYTarget, ref enemyNextXTarget);
             }
             else
             {
-                foreach (Ship playerShip in playerShips)
+                bool validTarget = false;
+                while (!validTarget)
                 {
-                    SetShipPositionManually(playerGrid, playerShip);
-                }
-            }
+                    selectedTarget = RequestString("Please enter target coordinates:");
 
-            foreach (Ship enemyShip in enemyShips)
-            {
-                _gridService.SetShipPosition(enemyGrid, enemyShip);
-            }
-
-            DrawPositioningGrid(playerGrid);
-        }
-
-        private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
-        {
-            int shipCount = RequestInt("Please enter no of ships:");
-
-            var playerShips = new List<CustomShip>();
-            for (int i = 0; i < shipCount; i++)
-            {
-                playerShips.Add(new CustomShip(1));
-
-                var enemyShip = new CustomShip(1);
-                _gridService.SetShipPosition(enemyGrid, enemyShip);
-            }
-
-            bool autoPositionShips = RequestBool("Position ships randomly:");
-            if (autoPositionShips)
-            {
-                foreach (CustomShip playerShip in playerShips)
-                {
-                    _gridService.SetShipPosition(playerGrid, playerShip);
-                }
-            }
-            else
-            {
-                foreach (CustomShip playerShip in playerShips)
-                {
-                    SetShipPositionManually(playerGrid, playerShip);
-                }
-            }
-
-            DrawPositioningGrid(playerGrid);
-        }
-
-        private void SetShipPositionManually(Grid grid, Ship ship)
-        {
-            try
-            {
-                DrawPositioningGrid(grid);
-
-                Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
-
-                string coords = RequestString("Please enter bow co-ords:");
-                var heading = RequestEnum<Heading>("Please enter a heading:");
-
-                _gridService.SetShipPosition(grid, ship, coords, heading);
-            }
-            catch (ShipPositioningException e)
-            {
-                Console.WriteLine(e.Message);
-                SetShipPositionManually(grid, ship);
-            }
-        }
-
-        private void PlayGame(Grid playerGrid, Grid enemyGrid)
-        {
-            bool autoTargetShips = RequestBool("Target ships randomly:");
-            int millisecondsTimeout = RequestInt("Please enter how many seconds to wait between actions:") * 1000;
-            bool showContinuePrompt = millisecondsTimeout > 0;
-
-            var rand = new Random();
-            bool playersTurn = rand.NextDouble() > 0.5;
-            string currentPlayer = playersTurn ? "Player" : "Enemy";
-            int turnNumber = 0;
-
-            string playerLastTarget, playerNextYTarget, playerNextXTarget;
-            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
-            
-            string enemyLastTarget, enemyNextYTarget, enemyNextXTarget;
-            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
-
-            Console.WriteLine();
-            Console.WriteLine($"{currentPlayer} starts.");
-
-            bool inGame = true;
-            while (inGame)
-            {
-                int roundNumber = turnNumber / 2 + 1;
-
-                Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
-
-                DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
-
-                Thread.Sleep(millisecondsTimeout);
-
-                string selectedTarget = "";
-                if (autoTargetShips || !playersTurn)
-                {
-                    List<string>? validTargets = null;
-
-                    if (playersTurn && !string.IsNullOrEmpty(playerLastTarget))
+                    if (targetGrid.IsValidTarget(selectedTarget))
                     {
-                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, playerLastTarget, playerNextYTarget, playerNextXTarget).ToList();
-
-                        if (!validTargets.Any())
-                        {
-                            Console.WriteLine("We should be backtrack to the first hit target here!");
-                            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
-
-                            validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-                        }
-                    }
-                    else if (!string.IsNullOrEmpty(enemyLastTarget))
-                    {
-                        validTargets = _gridService.GetValidNeighbouringTargets(targetGrid, enemyLastTarget, enemyNextYTarget, enemyNextXTarget).ToList();
-
-                        if (!validTargets.Any())
-                        {
-                            Console.WriteLine("We should be backtrack to the first hit target here!");
-                            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
-
-                            validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-                        }
-                    }
-
-                    validTargets ??= _gridService.GetValidTargets(targetGrid).ToList();
-
-                    selectedTarget = validTargets[rand.Next(0, validTargets.Count)];
-                }
-                else
-                {
-                    var validTargets = _gridService.GetValidTargets(targetGrid).ToList();
-
-                    bool validTarget = false;
-                    while (!validTarget)
-                    {
-                        selectedTarget = RequestString("Please enter target coordinates:");
-
-                        if (validTargets.Contains(selectedTarget))
-                        {
-                            validTarget = true;
-                        }
-                        else
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine($"{selectedTarget} isn't a valid target");
-                        }
-                    }
-                }
-
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
-                Thread.Sleep(millisecondsTimeout);
-
-                var shipType = _gridService.Attack(targetGrid, selectedTarget);
-
-                DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
-
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
-                Console.WriteLine();
-
-                if (shipType is not null)
-                {
-                    Console.WriteLine("KABOOM! Attack successful!");
-
-                    if (_gridService.HasShipBeenSunk(targetGrid, shipType.Value))
-                    {
-                        if (playersTurn)
-                        {
-                            playerLastTarget = playerNextYTarget = playerNextXTarget = "";
-                        }
-                        else
-                        {
-                            enemyLastTarget = enemyNextYTarget = enemyNextXTarget = "";
-                        }
-
-                        Console.WriteLine($"You sunk my {shipType}!");
+                        validTarget = true;
                     }
                     else
                     {
-                        var (selectedX, selectedY) = SplitCoordinates(selectedTarget);
+                        Console.WriteLine();
+                        Console.WriteLine($"{selectedTarget} isn't a valid target");
+                    }
+                }
+            }
 
-                        if (playersTurn)
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+            Thread.Sleep(millisecondsTimeout);
+
+            var shipType = gridService.Attack(targetGrid, selectedTarget);
+
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+            Console.WriteLine();
+
+            if (shipType is not null)
+            {
+                Console.WriteLine("KABOOM! Attack successful!");
+
+                if (playersTurn)
+                {
+                    UpdateTargetTracking(targetGrid, shipType.Value, selectedTarget, ref playerLastTarget, ref playerNextYTarget, ref playerNextXTarget);
+                }
+                else
+                {
+                    UpdateTargetTracking(targetGrid, shipType.Value, selectedTarget, ref enemyLastTarget, ref enemyNextYTarget, ref enemyNextXTarget);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Sploosh. Attack unsuccessful.");
+            }
+
+            if (showContinuePrompt)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.ReadLine();
+            }
+
+            if (targetGrid.HasShipsRemaining)
+            {
+                playersTurn = !playersTurn;
+                currentPlayer = playersTurn ? "Player" : "Enemy";
+                turnNumber++;
+                continue;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"{currentPlayer} wins!");
+            inGame = false;
+        }
+    }
+
+    private string SelectAutoTarget(Grid targetGrid, ref string lastTarget, ref string nextYTarget, ref string nextXTarget)
+    {
+        if (string.IsNullOrEmpty(lastTarget))
+        {
+            lastTarget = targetGrid.UnsunkHitPositions.FirstOrDefault() ?? "";
+        }
+
+        List<string>? validTargets = null;
+
+        if (!string.IsNullOrEmpty(lastTarget))
+        {
+            validTargets = [.. gridService.GetValidNeighbouringTargets(targetGrid, lastTarget, nextYTarget, nextXTarget)];
+
+            if (validTargets.Count == 0)
+            {
+                string? firstHitTarget = targetGrid.UnsunkHitPositions.FirstOrDefault();
+                if (firstHitTarget is not null)
+                {
+                    lastTarget = firstHitTarget;
+                    validTargets = [.. gridService.GetValidNeighbouringTargets(targetGrid, lastTarget, nextYTarget, nextXTarget)];
+
+                    if (validTargets.Count == 0)
+                    {
+                        nextYTarget = nextXTarget = "";
+
+                        foreach (string hitPosition in targetGrid.UnsunkHitPositions)
                         {
-                            if (!string.IsNullOrEmpty(playerLastTarget))
+                            var neighbours = gridService.GetValidNeighbouringTargets(targetGrid, hitPosition).ToList();
+                            if (neighbours.Count > 0)
                             {
-                                var (lastX, lastY) = SplitCoordinates(playerLastTarget);
-
-                                if (lastX == selectedX)
-                                {
-                                    playerNextXTarget = selectedX;
-                                }
-
-                                if (lastY == selectedY)
-                                {
-                                    playerNextYTarget = selectedY;
-                                }
+                                lastTarget = hitPosition;
+                                validTargets = neighbours;
+                                break;
                             }
-
-                            playerLastTarget = selectedTarget;
-                        }
-                        else
-                        {
-                            if (!string.IsNullOrEmpty(enemyLastTarget))
-                            {
-                                var (lastX, lastY) = SplitCoordinates(enemyLastTarget);
-
-                                if (lastX == selectedX)
-                                {
-                                    enemyNextXTarget = selectedX;
-                                }
-
-                                if (lastY == selectedY)
-                                {
-                                    enemyNextYTarget = selectedY;
-                                }
-                            }
-
-                            enemyLastTarget = selectedTarget;
                         }
                     }
                 }
-                else
-                {
-                    Console.WriteLine("Sploosh. Attack unsuccessful.");
-                }
 
-                if (showContinuePrompt)
+                if (validTargets is null || validTargets.Count == 0)
                 {
-                    Console.WriteLine("Press any key to continue");
-                    Console.ReadLine();
+                    lastTarget = nextYTarget = nextXTarget = "";
                 }
-
-                var remainingShipPositions = _gridService.GetShipPositions(targetGrid);
-                if (remainingShipPositions.Any())
-                {
-                    playersTurn = !playersTurn;
-                    currentPlayer = playersTurn ? "Player" : "Enemy";
-                    turnNumber++;
-                    continue;
-                }
-
-                Console.WriteLine();
-                Console.WriteLine($"{currentPlayer} wins!");
-                inGame = false;
             }
         }
 
-        private static string RequestString(string request)
+        if (validTargets is null || validTargets.Count == 0)
         {
-            Console.WriteLine();
-            Console.WriteLine(request);
-            return Console.ReadLine() ?? "";
+            validTargets = [.. targetGrid.ValidTargets];
         }
 
-        private static int RequestInt(string request)
+        return validTargets[Random.Shared.Next(validTargets.Count)];
+    }
+
+    private void UpdateTargetTracking(
+        Grid targetGrid,
+        ShipType shipType,
+        string selectedTarget,
+        ref string lastTarget,
+        ref string nextYTarget,
+        ref string nextXTarget)
+    {
+        if (gridService.HasShipBeenSunk(targetGrid, shipType))
+        {
+            nextYTarget = nextXTarget = "";
+            lastTarget = targetGrid.UnsunkHitPositions.FirstOrDefault() ?? "";
+
+            Console.WriteLine($"You sunk my {shipType}!");
+        }
+        else
+        {
+            var (selectedX, selectedY) = SplitCoordinates(selectedTarget);
+
+            if (!string.IsNullOrEmpty(lastTarget))
+            {
+                var (lastX, lastY) = SplitCoordinates(lastTarget);
+
+                if (lastX == selectedX)
+                {
+                    nextXTarget = selectedX;
+                }
+
+                if (lastY == selectedY)
+                {
+                    nextYTarget = selectedY;
+                }
+            }
+
+            lastTarget = selectedTarget;
+        }
+    }
+
+    private static string RequestString(string request)
+    {
+        Console.WriteLine();
+        Console.WriteLine(request);
+        return Console.ReadLine() ?? "";
+    }
+
+    private static T Request<T>(string request) where T : IParsable<T>
+    {
+        while (true)
         {
             string input = RequestString(request);
-
-            if (int.TryParse(input, out int result))
+            if (T.TryParse(input, CultureInfo.CurrentCulture, out var result))
             {
                 return result;
             }
 
-            result = default;
-            RewriteLine(result);
-
-            return result;
+            Console.WriteLine($"Invalid input '{input}'. Please enter a valid {typeof(T).Name}.");
         }
+    }
 
-        private static bool RequestBool(string request)
+    private static int RequestInt(string request) => Request<int>(request);
+
+    private static bool RequestBool(string request)
+    {
+        while (true)
         {
             string input = RequestString(request);
-            bool result = Regex.IsMatch(input, "y(es)*|t(rue)*|1", RegexOptions.IgnoreCase);
-
-            RewriteLine(result);
-
-            return result;
-        }
-
-        private static T RequestEnum<T>(string request) where T : struct
-        {
-            string input = RequestString(request);
-
-            if (Enum.TryParse(input, true, out T result))
+            if (bool.TryParse(input, out bool result))
             {
                 return result;
             }
 
-            result = default;
-            RewriteLine(result);
-
-            return result;
-        }
-
-        private static void DrawGrid(Grid grid, string format)
-        {
-            const string characters = "abcdhms";
-
-            string output = grid.ToString(format, CultureInfo.CurrentCulture);
-            foreach (char character in output)
+            if (Regex.IsMatch(input, @"^(y(es)?|t(rue)?|1)$", RegexOptions.IgnoreCase))
             {
-                if (characters.Contains(character))
-                {
-                    Console.ForegroundColor = character switch
-                    {
-                        'h' => ConsoleColor.Red,
-                        'm' => ConsoleColor.White,
-                        _ => ConsoleColor.Gray
-                    };
-
-                    Console.Write('●');
-                    Console.ResetColor();
-                }
-                else
-                {
-                    Console.Write(character);
-                }
-            }
-        }
-
-        private static void DrawPositioningGrid(Grid grid)
-        {
-            Console.WriteLine();
-            DrawGrid(grid, "Positioning");
-        }
-
-        private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole)
-        {
-            if (clearConsole)
-            {
-                Console.Clear();
-                Console.WriteLine($"Round {roundNumber}");
-                Console.WriteLine($"{currentPlayer}'s turn.");
+                return true;
             }
 
-            Console.WriteLine();
-            DrawGrid(grid, "Targeting");
+            if (Regex.IsMatch(input, @"^(n(o)?|f(alse)?|0)$", RegexOptions.IgnoreCase))
+            {
+                return false;
+            }
+
+            Console.WriteLine($"Invalid input '{input}'. Please enter a valid {nameof(Boolean)}.");
+        }
+    }
+
+    private static T RequestEnum<T>(string request) where T : struct, Enum
+    {
+        while (true)
+        {
+            string input = RequestString(request);
+            if (Enum.TryParse<T>(input, ignoreCase: true, out var result))
+            {
+                return result;
+            }
+
+            Console.WriteLine($"Invalid option '{input}'. Valid options: {string.Join(", ", Enum.GetNames<T>())}");
+        }
+    }
+
+    private static void DrawGrid(Grid grid, string format)
+    {
+        string output = grid.ToString(format, CultureInfo.CurrentCulture);
+        foreach (char character in output)
+        {
+            if (GridCharacters.Contains(character))
+            {
+                Console.ForegroundColor = character switch
+                {
+                    'h' => ConsoleColor.Red,
+                    'm' => ConsoleColor.White,
+                    _ => ConsoleColor.Gray
+                };
+
+                Console.Write('●');
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.Write(character);
+            }
+        }
+    }
+
+    private static void DrawPositioningGrid(Grid grid)
+    {
+        Console.WriteLine();
+        DrawGrid(grid, "Positioning");
+    }
+
+    private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole)
+    {
+        if (clearConsole)
+        {
+            Console.Clear();
+            Console.WriteLine($"Round {roundNumber}");
+            Console.WriteLine($"{currentPlayer}'s turn.");
         }
 
-        private static void RewriteLine(object value)
-        {
-            int previousLineCursor = Console.CursorTop - 1;
-            Console.SetCursorPosition(0, previousLineCursor);
-            Console.Write(new string(' ', Console.BufferWidth));
-            Console.SetCursorPosition(0, previousLineCursor);
-            Console.WriteLine(value);
-        }
+        Console.WriteLine();
+        DrawGrid(grid, "Targeting");
+    }
 
-        private (string x, string y) SplitCoordinates(string coords)
-        {
-            const string pattern = @"(\w+)(\d+)";
-            var match = Regex.Match(coords, pattern);
-            return (match.Groups[2].Value, match.Groups[1].Value);
-        }
+    private static (string x, string y) SplitCoordinates(string coords)
+    {
+        const string pattern = @"^([A-Za-z]+)(\d+)$";
+        var match = Regex.Match(coords, pattern);
+        return (match.Groups[2].Value, match.Groups[1].Value);
     }
 }

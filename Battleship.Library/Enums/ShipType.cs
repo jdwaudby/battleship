@@ -1,12 +1,11 @@
-﻿namespace Battleship.Library.Enums
+namespace Battleship.Library.Enums;
+
+public enum ShipType
 {
-    public enum ShipType
-    {
-        AircraftCarrier,
-        Battleship,
-        Cruiser,
-        Submarine,
-        Destroyer,
-        Custom
-    }
+    AircraftCarrier,
+    Battleship,
+    Cruiser,
+    Submarine,
+    Destroyer,
+    Custom
 }

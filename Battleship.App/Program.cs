@@ -1,27 +1,26 @@
-﻿using Battleship.Library.Services.Implementations;
+using Battleship.Library.Services.Implementations;
 using Battleship.Library.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Battleship.App
+namespace Battleship.App;
+
+public class Program
 {
-    public class Program
+    public static void Main()
     {
-        public static void Main()
-        {
-            IServiceCollection services = new ServiceCollection();
-            ConfigureServices(services);
+        IServiceCollection services = new ServiceCollection();
+        ConfigureServices(services);
 
-            IServiceProvider provider = services.BuildServiceProvider();
+        IServiceProvider provider = services.BuildServiceProvider();
 
-            provider.GetRequiredService<App>().Start();
-        }
+        provider.GetRequiredService<App>().Start();
+    }
 
-        private static void ConfigureServices(IServiceCollection services)
-        {
-            services.AddTransient<IGridService, GridService>();
-            services.AddTransient<IShipService, ShipService>();
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        services.AddTransient<IGridService, GridService>();
+        services.AddTransient<IShipService, ShipService>();
 
-            services.AddSingleton<App>();
-        }
+        services.AddSingleton<App>();
     }
 }

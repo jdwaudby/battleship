@@ -1,9 +1,8 @@
-﻿using Battleship.Library.Models;
+using Battleship.Library.Models;
 
-namespace Battleship.Library.Services.Interfaces
+namespace Battleship.Library.Services.Interfaces;
+
+public interface IShipService
 {
-    public interface IShipService
-    {
-        IEnumerable<Ship> Get();
-    }
+    IEnumerable<Ship> Get();
 }

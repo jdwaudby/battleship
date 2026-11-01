@@ -1,41 +1,31 @@
-﻿using System;
 using Battleship.Library.Enums;
 
-namespace Battleship.Library.Models
+namespace Battleship.Library.Models;
+
+public class Square(string y, int x)
 {
-    public class Square
+    public string Y { get; } = y;
+    public string X { get; } = x.ToString();
+    public string Coordinates => $"{Y}{X}";
+    public SquareStatus? Status { get; private set; }
+    public DateTime LastUpdated { get; private set; } = DateTime.UtcNow;
+
+    public void UpdateStatus(SquareStatus status)
     {
-        public Square(string y, int x)
+        if (Status == status)
         {
-            Y = y;
-            X = x.ToString();
-
-            LastUpdated = DateTime.UtcNow;
+            return;
         }
-        
-        public string Y { get; }
-        public string X { get; }
-        public string Coordinates => Y + X;
-        public SquareStatus? Status { get; private set; }
-        public DateTime LastUpdated { get; private set; }
 
-        public void UpdateStatus(SquareStatus status)
+        if (Status is null)
         {
-            if (Status == status)
-            {
-                return;
-            }
-
-            if (Status == null)
-            {
-                Status = status;
-            }
-            else
-            {
-                Status |= status;
-            }
-            
-            LastUpdated = DateTime.UtcNow;
+            Status = status;
         }
+        else
+        {
+            Status |= status;
+        }
+
+        LastUpdated = DateTime.UtcNow;
     }
 }

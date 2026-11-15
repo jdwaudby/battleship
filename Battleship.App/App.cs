@@ -423,6 +423,7 @@ public class App(IGridService gridService, IShipService shipService)
         if (clearConsole)
         {
             Console.Clear();
+            Console.Write("\x1b[3J");
             Console.WriteLine($"Round {roundNumber}");
             Console.WriteLine($"{currentPlayer}'s turn.");
         }

@@ -9,7 +9,7 @@ using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.App;
 
-public class App(IGridService gridService, IShipService shipService)
+public partial class App(IGridService gridService, IShipService shipService)
 {
     private static readonly SearchValues<char> GridCharacters = SearchValues.Create("abcdhms");
 
@@ -49,7 +49,7 @@ public class App(IGridService gridService, IShipService shipService)
 
         Console.WriteLine();
         Console.WriteLine("Thanks for playing!");
-        Console.ReadLine();
+        WaitForKeyPress();
     }
 
     private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
@@ -143,8 +143,8 @@ public class App(IGridService gridService, IShipService shipService)
         string currentPlayer = playersTurn ? "Player" : "Enemy";
         int turnNumber = 0;
 
-        string playerLastTarget = "", playerNextYTarget = "", playerNextXTarget = "";
-        string enemyLastTarget = "", enemyNextYTarget = "", enemyNextXTarget = "";
+        var playerTracker = new TargetTracker();
+        var enemyTracker = new TargetTracker();
 
         Console.WriteLine();
         Console.WriteLine($"{currentPlayer} starts.");
@@ -155,17 +155,16 @@ public class App(IGridService gridService, IShipService shipService)
             int roundNumber = turnNumber / 2 + 1;
 
             Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
+            TargetTracker currentTracker = playersTurn ? playerTracker : enemyTracker;
 
-            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt, showHeader: true);
 
             Thread.Sleep(millisecondsTimeout);
 
             string selectedTarget = "";
             if (autoTargetShips || !playersTurn)
             {
-                selectedTarget = playersTurn
-                    ? SelectAutoTarget(targetGrid, ref playerLastTarget, ref playerNextYTarget, ref playerNextXTarget)
-                    : SelectAutoTarget(targetGrid, ref enemyLastTarget, ref enemyNextYTarget, ref enemyNextXTarget);
+                selectedTarget = currentTracker.SelectTarget(targetGrid, gridService);
             }
             else
             {
@@ -186,29 +185,22 @@ public class App(IGridService gridService, IShipService shipService)
                 }
             }
 
-            Console.WriteLine();
             Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
             Thread.Sleep(millisecondsTimeout);
 
             var shipType = gridService.Attack(targetGrid, selectedTarget);
 
-            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt);
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt, showHeader: false);
 
-            Console.WriteLine();
             Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
-            Console.WriteLine();
 
             if (shipType is not null)
             {
                 Console.WriteLine("KABOOM! Attack successful!");
 
-                if (playersTurn)
+                if (currentTracker.RecordHit(targetGrid, gridService, selectedTarget, shipType.Value))
                 {
-                    UpdateTargetTracking(targetGrid, shipType.Value, selectedTarget, ref playerLastTarget, ref playerNextYTarget, ref playerNextXTarget);
-                }
-                else
-                {
-                    UpdateTargetTracking(targetGrid, shipType.Value, selectedTarget, ref enemyLastTarget, ref enemyNextYTarget, ref enemyNextXTarget);
+                    Console.WriteLine($"You sunk my {shipType}!");
                 }
             }
             else
@@ -219,7 +211,7 @@ public class App(IGridService gridService, IShipService shipService)
             if (showContinuePrompt)
             {
                 Console.WriteLine("Press any key to continue");
-                Console.ReadLine();
+                WaitForKeyPress();
             }
 
             if (targetGrid.HasShipsRemaining)
@@ -233,97 +225,6 @@ public class App(IGridService gridService, IShipService shipService)
             Console.WriteLine();
             Console.WriteLine($"{currentPlayer} wins!");
             inGame = false;
-        }
-    }
-
-    private string SelectAutoTarget(Grid targetGrid, ref string lastTarget, ref string nextYTarget, ref string nextXTarget)
-    {
-        if (string.IsNullOrEmpty(lastTarget))
-        {
-            lastTarget = targetGrid.UnsunkHitPositions.FirstOrDefault() ?? "";
-        }
-
-        List<string>? validTargets = null;
-
-        if (!string.IsNullOrEmpty(lastTarget))
-        {
-            validTargets = [.. gridService.GetValidNeighbouringTargets(targetGrid, lastTarget, nextYTarget, nextXTarget)];
-
-            if (validTargets.Count == 0)
-            {
-                string? firstHitTarget = targetGrid.UnsunkHitPositions.FirstOrDefault();
-                if (firstHitTarget is not null)
-                {
-                    lastTarget = firstHitTarget;
-                    validTargets = [.. gridService.GetValidNeighbouringTargets(targetGrid, lastTarget, nextYTarget, nextXTarget)];
-
-                    if (validTargets.Count == 0)
-                    {
-                        nextYTarget = nextXTarget = "";
-
-                        foreach (string hitPosition in targetGrid.UnsunkHitPositions)
-                        {
-                            var neighbours = gridService.GetValidNeighbouringTargets(targetGrid, hitPosition).ToList();
-                            if (neighbours.Count > 0)
-                            {
-                                lastTarget = hitPosition;
-                                validTargets = neighbours;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (validTargets is null || validTargets.Count == 0)
-                {
-                    lastTarget = nextYTarget = nextXTarget = "";
-                }
-            }
-        }
-
-        if (validTargets is null || validTargets.Count == 0)
-        {
-            validTargets = [.. targetGrid.ValidTargets];
-        }
-
-        return validTargets[Random.Shared.Next(validTargets.Count)];
-    }
-
-    private void UpdateTargetTracking(
-        Grid targetGrid,
-        ShipType shipType,
-        string selectedTarget,
-        ref string lastTarget,
-        ref string nextYTarget,
-        ref string nextXTarget)
-    {
-        if (gridService.HasShipBeenSunk(targetGrid, shipType))
-        {
-            nextYTarget = nextXTarget = "";
-            lastTarget = targetGrid.UnsunkHitPositions.FirstOrDefault() ?? "";
-
-            Console.WriteLine($"You sunk my {shipType}!");
-        }
-        else
-        {
-            var (selectedX, selectedY) = SplitCoordinates(selectedTarget);
-
-            if (!string.IsNullOrEmpty(lastTarget))
-            {
-                var (lastX, lastY) = SplitCoordinates(lastTarget);
-
-                if (lastX == selectedX)
-                {
-                    nextXTarget = selectedX;
-                }
-
-                if (lastY == selectedY)
-                {
-                    nextYTarget = selectedY;
-                }
-            }
-
-            lastTarget = selectedTarget;
         }
     }
 
@@ -360,12 +261,12 @@ public class App(IGridService gridService, IShipService shipService)
                 return result;
             }
 
-            if (Regex.IsMatch(input, @"^(y(es)?|t(rue)?|1)$", RegexOptions.IgnoreCase))
+            if (TrueRegex().IsMatch(input))
             {
                 return true;
             }
 
-            if (Regex.IsMatch(input, @"^(n(o)?|f(alse)?|0)$", RegexOptions.IgnoreCase))
+            if (FalseRegex().IsMatch(input))
             {
                 return false;
             }
@@ -418,24 +319,42 @@ public class App(IGridService gridService, IShipService shipService)
         DrawGrid(grid, "Positioning");
     }
 
-    private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole)
+    private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole, bool showHeader = true)
     {
         if (clearConsole)
         {
             Console.Clear();
             Console.Write("\x1b[3J");
+        }
+        else
+        {
+            Console.WriteLine();
+        }
+
+        if (clearConsole || showHeader)
+        {
             Console.WriteLine($"Round {roundNumber}");
             Console.WriteLine($"{currentPlayer}'s turn.");
         }
 
-        Console.WriteLine();
         DrawGrid(grid, "Targeting");
     }
 
-    private static (string x, string y) SplitCoordinates(string coords)
+    private static void WaitForKeyPress()
     {
-        const string pattern = @"^([A-Za-z]+)(\d+)$";
-        var match = Regex.Match(coords, pattern);
-        return (match.Groups[2].Value, match.Groups[1].Value);
+        if (Console.IsInputRedirected)
+        {
+            Console.ReadLine();
+        }
+        else
+        {
+            Console.ReadKey(intercept: true);
+        }
     }
+
+    [GeneratedRegex(@"^(y(es)?|t(rue)?|1)$", RegexOptions.IgnoreCase)]
+    private static partial Regex TrueRegex();
+
+    [GeneratedRegex(@"^(n(o)?|f(alse)?|0)$", RegexOptions.IgnoreCase)]
+    private static partial Regex FalseRegex();
 }

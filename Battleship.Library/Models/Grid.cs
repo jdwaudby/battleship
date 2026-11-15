@@ -59,7 +59,12 @@ public class Grid : IFormattable
 
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        format = format ?? throw new ArgumentNullException(nameof(format));
+        ArgumentNullException.ThrowIfNull(format);
+
+        if (Squares.Count == 0)
+        {
+            return string.Empty;
+        }
 
         bool positioning = format.Equals("Positioning");
         bool targeting = format.Equals("Targeting");

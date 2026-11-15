@@ -23,6 +23,17 @@ public static class GridExtensions
         public IEnumerable<string> ValidTargets =>
             [.. grid.EmptyPositions, .. grid.ShipPositions];
 
+        public IEnumerable<string> ParityTargets =>
+            grid.Squares
+                .Where(s => (s.Status is null || SquareStatus.Ship.HasFlag(s.Status.Value))
+                            && (Grid.LetterSequenceToInteger(s.Y) + int.Parse(s.X)) % 2 == 0)
+                .Select(s => s.Coordinates);
+
+        public bool HasStandardShipsRemaining =>
+            grid.Squares.Any(s => s.Status is { } status
+                                  && SquareStatus.Ship.HasFlag(status)
+                                  && status != SquareStatus.Ship);
+
         public IEnumerable<string> UnsunkHitPositions =>
             grid.Squares
                 .Where(s => s.Status is { } status

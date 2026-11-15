@@ -36,6 +36,10 @@ public class GridServiceTests
 
         // Assert
         Assert.Equal(squareCount, grid.Squares.Count);
+        if (squareCount == 0)
+        {
+            Assert.Equal(string.Empty, grid.ToString());
+        }
     }
 
     [Fact]
@@ -141,5 +145,57 @@ public class GridServiceTests
         Assert.Equal("B3", firstHitTarget);
         Assert.Single(backtrackTargets);
         Assert.Equal("B2", backtrackTargets[0]);
+    }
+
+    [Fact]
+    public void ParityTargets_OnStandardGrid_ReturnsHalfOfSquares()
+    {
+        // Arrange
+        var gridService = new GridService();
+        Grid grid = gridService.Create();
+
+        // Act
+        var parityTargets = grid.ParityTargets.ToList();
+
+        // Assert
+        Assert.Equal(50, parityTargets.Count);
+        Assert.Contains("A2", parityTargets);
+        Assert.DoesNotContain("A1", parityTargets);
+    }
+
+    [Fact]
+    public void TargetTracker_LocksAxisAndBacktracksToSinkShip()
+    {
+        // Arrange
+        var gridService = new GridService();
+        Grid grid = gridService.Create();
+        var cruiser = new Cruiser();
+        gridService.SetShipPosition(grid, cruiser, "B2", Heading.West); // B2, B3, B4
+        var tracker = new TargetTracker();
+
+        // Act & Assert: 1. Initial hit on B3
+        ShipType? hit1 = gridService.Attack(grid, "B3");
+        Assert.False(tracker.RecordHit(grid, gridService, "B3", hit1!.Value));
+        Assert.Equal("B3", tracker.LastTarget);
+
+        // 2. Second hit on B4 locks onto row B
+        Thread.Sleep(5);
+        ShipType? hit2 = gridService.Attack(grid, "B4");
+        Assert.False(tracker.RecordHit(grid, gridService, "B4", hit2!.Value));
+        Assert.Equal("B", tracker.NextYTarget);
+        Assert.Equal("", tracker.NextXTarget);
+
+        // 3. Next target from B4 along row B must be B5 (miss)
+        string nextTarget = tracker.SelectTarget(grid, gridService);
+        Assert.Equal("B5", nextTarget);
+        Thread.Sleep(5);
+        Assert.Null(gridService.Attack(grid, nextTarget));
+
+        // 4. Next target must backtrack to B3 and select B2
+        string backtrackTarget = tracker.SelectTarget(grid, gridService);
+        Assert.Equal("B2", backtrackTarget);
+        ShipType? hit3 = gridService.Attack(grid, backtrackTarget);
+        Assert.True(tracker.RecordHit(grid, gridService, backtrackTarget, hit3!.Value));
+        Assert.Equal("", tracker.LastTarget);
     }
 }

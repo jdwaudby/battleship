@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Battleship.Library.Enums;
 using Battleship.Library.Exceptions;
 using Battleship.Library.Models;
@@ -8,7 +9,7 @@ using Battleship.Library.Services.Interfaces;
 
 namespace Battleship.App;
 
-public class App(IGridService gridService, IShipService shipService)
+public partial class App(IGridService gridService, IShipService shipService)
 {
     private static readonly SearchValues<char> GridCharacters = SearchValues.Create("abcdhms");
 
@@ -48,7 +49,7 @@ public class App(IGridService gridService, IShipService shipService)
 
         Console.WriteLine();
         Console.WriteLine("Thanks for playing!");
-        Console.ReadLine();
+        WaitForKeyPress();
     }
 
     private void SetUpStandardGame(Grid playerGrid, Grid enemyGrid)
@@ -77,8 +78,7 @@ public class App(IGridService gridService, IShipService shipService)
             gridService.SetShipPosition(enemyGrid, enemyShip);
         }
 
-        Console.WriteLine();
-        DrawGrid(playerGrid, "Positioning");
+        DrawPositioningGrid(playerGrid);
     }
 
     private void SetUpCustomGame(Grid playerGrid, Grid enemyGrid)
@@ -110,16 +110,14 @@ public class App(IGridService gridService, IShipService shipService)
             }
         }
 
-        Console.WriteLine();
-        DrawGrid(playerGrid, "Positioning");
+        DrawPositioningGrid(playerGrid);
     }
 
     private void SetShipPositionManually(Grid grid, Ship ship)
     {
         try
         {
-            Console.WriteLine();
-            DrawGrid(grid, "Positioning");
+            DrawPositioningGrid(grid);
 
             Console.WriteLine($"Ship {ship.Type}, length {ship.Length}");
 
@@ -138,9 +136,15 @@ public class App(IGridService gridService, IShipService shipService)
     private void PlayGame(Grid playerGrid, Grid enemyGrid)
     {
         bool autoTargetShips = RequestBool("Target ships randomly:");
+        int millisecondsTimeout = RequestInt("Please enter how many seconds to wait between actions:") * 1000;
+        bool showContinuePrompt = millisecondsTimeout > 0;
 
         bool playersTurn = Random.Shared.NextDouble() > 0.5;
         string currentPlayer = playersTurn ? "Player" : "Enemy";
+        int turnNumber = 0;
+
+        var playerTracker = new TargetTracker();
+        var enemyTracker = new TargetTracker();
 
         Console.WriteLine();
         Console.WriteLine($"{currentPlayer} starts.");
@@ -148,20 +152,19 @@ public class App(IGridService gridService, IShipService shipService)
         bool inGame = true;
         while (inGame)
         {
-            Console.WriteLine();
-            Console.WriteLine($"{currentPlayer}'s turn.");
+            int roundNumber = turnNumber / 2 + 1;
 
             Grid targetGrid = playersTurn ? enemyGrid : playerGrid;
+            TargetTracker currentTracker = playersTurn ? playerTracker : enemyTracker;
 
-            Console.WriteLine();
-            DrawGrid(targetGrid, "Targeting");
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt, showHeader: true);
 
-            var validTargets = targetGrid.ValidTargets.ToList();
+            Thread.Sleep(millisecondsTimeout);
 
             string selectedTarget = "";
             if (autoTargetShips || !playersTurn)
             {
-                selectedTarget = validTargets[Random.Shared.Next(validTargets.Count)];
+                selectedTarget = currentTracker.SelectTarget(targetGrid, gridService);
             }
             else
             {
@@ -182,15 +185,20 @@ public class App(IGridService gridService, IShipService shipService)
                 }
             }
 
-            Console.WriteLine();
             Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+            Thread.Sleep(millisecondsTimeout);
 
             var shipType = gridService.Attack(targetGrid, selectedTarget);
+
+            DrawTargetingGrid(targetGrid, roundNumber, currentPlayer, showContinuePrompt, showHeader: false);
+
+            Console.WriteLine($"{currentPlayer} attacks {selectedTarget}");
+
             if (shipType is not null)
             {
                 Console.WriteLine("KABOOM! Attack successful!");
 
-                if (gridService.HasShipBeenSunk(targetGrid, shipType.Value))
+                if (currentTracker.RecordHit(targetGrid, gridService, selectedTarget, shipType.Value))
                 {
                     Console.WriteLine($"You sunk my {shipType}!");
                 }
@@ -200,10 +208,17 @@ public class App(IGridService gridService, IShipService shipService)
                 Console.WriteLine("Sploosh. Attack unsuccessful.");
             }
 
+            if (showContinuePrompt)
+            {
+                Console.WriteLine("Press any key to continue");
+                WaitForKeyPress();
+            }
+
             if (targetGrid.HasShipsRemaining)
             {
                 playersTurn = !playersTurn;
                 currentPlayer = playersTurn ? "Player" : "Enemy";
+                turnNumber++;
                 continue;
             }
 
@@ -236,7 +251,29 @@ public class App(IGridService gridService, IShipService shipService)
 
     private static int RequestInt(string request) => Request<int>(request);
 
-    private static bool RequestBool(string request) => Request<bool>(request);
+    private static bool RequestBool(string request)
+    {
+        while (true)
+        {
+            string input = RequestString(request);
+            if (bool.TryParse(input, out bool result))
+            {
+                return result;
+            }
+
+            if (TrueRegex().IsMatch(input))
+            {
+                return true;
+            }
+
+            if (FalseRegex().IsMatch(input))
+            {
+                return false;
+            }
+
+            Console.WriteLine($"Invalid input '{input}'. Please enter a valid {nameof(Boolean)}.");
+        }
+    }
 
     private static T RequestEnum<T>(string request) where T : struct, Enum
     {
@@ -275,4 +312,49 @@ public class App(IGridService gridService, IShipService shipService)
             }
         }
     }
+
+    private static void DrawPositioningGrid(Grid grid)
+    {
+        Console.WriteLine();
+        DrawGrid(grid, "Positioning");
+    }
+
+    private static void DrawTargetingGrid(Grid grid, int roundNumber, string currentPlayer, bool clearConsole, bool showHeader = true)
+    {
+        if (clearConsole)
+        {
+            Console.Clear();
+            Console.Write("\x1b[3J");
+        }
+        else
+        {
+            Console.WriteLine();
+        }
+
+        if (clearConsole || showHeader)
+        {
+            Console.WriteLine($"Round {roundNumber}");
+            Console.WriteLine($"{currentPlayer}'s turn.");
+        }
+
+        DrawGrid(grid, "Targeting");
+    }
+
+    private static void WaitForKeyPress()
+    {
+        if (Console.IsInputRedirected)
+        {
+            Console.ReadLine();
+        }
+        else
+        {
+            Console.ReadKey(intercept: true);
+        }
+    }
+
+    [GeneratedRegex(@"^(y(es)?|t(rue)?|1)$", RegexOptions.IgnoreCase)]
+    private static partial Regex TrueRegex();
+
+    [GeneratedRegex(@"^(n(o)?|f(alse)?|0)$", RegexOptions.IgnoreCase)]
+    private static partial Regex FalseRegex();
 }

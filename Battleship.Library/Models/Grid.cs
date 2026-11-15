@@ -6,6 +6,8 @@ namespace Battleship.Library.Models;
 
 public class Grid : IFormattable
 {
+    private const string Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
     private const char LeftTop = '┌';
     private const char RightTop = '┐';
     private const char LeftBottom = '└';
@@ -26,6 +28,13 @@ public class Grid : IFormattable
 
     public Grid(int width, int height)
     {
+        if (width < 0 || height < 0)
+        {
+            Squares = [];
+            _squareLookup = new Dictionary<string, Square>(StringComparer.OrdinalIgnoreCase);
+            return;
+        }
+
         List<Square> squares = [];
         _squareLookup = new Dictionary<string, Square>(width * height, StringComparer.OrdinalIgnoreCase);
 
@@ -50,7 +59,12 @@ public class Grid : IFormattable
 
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        format = format ?? throw new ArgumentNullException(nameof(format));
+        ArgumentNullException.ThrowIfNull(format);
+
+        if (Squares.Count == 0)
+        {
+            return string.Empty;
+        }
 
         bool positioning = format.Equals("Positioning");
         bool targeting = format.Equals("Targeting");
@@ -108,29 +122,48 @@ public class Grid : IFormattable
         return sb.ToString();
     }
 
-    private static string GetSquareSymbol(SquareStatus status, bool positioning, bool targeting) => status switch
+    private static string GetSquareSymbol(SquareStatus status, bool positioning, bool targeting)
     {
-        SquareStatus.AircraftCarrier => positioning ? "a" : " ",
-        SquareStatus.Battleship => positioning ? "b" : " ",
-        SquareStatus.Cruiser => positioning ? "c" : " ",
-        SquareStatus.Submarine => positioning ? "s" : " ",
-        SquareStatus.Destroyer => positioning ? "d" : " ",
-        SquareStatus.Hit => targeting ? "h" : " ",
-        SquareStatus.Miss => targeting ? "m" : " ",
-        SquareStatus.Ship => positioning ? "s" : " ",
-        _ => " "
-    };
+        if (positioning)
+        {
+            if (status.HasFlag(SquareStatus.AircraftCarrier)) return "a";
+            if (status.HasFlag(SquareStatus.Battleship)) return "b";
+            if (status.HasFlag(SquareStatus.Cruiser)) return "c";
+            if (status.HasFlag(SquareStatus.Submarine) || status.HasFlag(SquareStatus.Ship)) return "s";
+            if (status.HasFlag(SquareStatus.Destroyer)) return "d";
+        }
+        else if (targeting && status.HasFlag(SquareStatus.Hit))
+        {
+            return (status & SquareStatus.Ship) != 0 ? "h" : "m";
+        }
 
-    private static string IntegerToLetterSequence(int value)
+        return " ";
+    }
+
+    internal static int LetterSequenceToInteger(string value)
     {
-        const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int result = 0;
 
+        foreach (char letter in value.ToUpperInvariant())
+        {
+            result *= Letters.Length;
+            result += letter - 'A' + 1;
+        }
+
+        return result - 1;
+    }
+
+    internal static string IntegerToLetterSequence(int value)
+    {
         string result = "";
 
-        if (value >= letters.Length)
-            result += letters[value / letters.Length - 1];
+        if (value < 0)
+            return result;
 
-        result += letters[value % letters.Length];
+        if (value >= Letters.Length)
+            result += Letters[value / Letters.Length - 1];
+
+        result += Letters[value % Letters.Length];
 
         return result;
     }

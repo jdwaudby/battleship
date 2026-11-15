@@ -46,7 +46,7 @@ public class GridService : IGridService
 
         foreach (Square square in squares)
         {
-            square.Status = status;
+            square.UpdateStatus(status);
         }
     }
 
@@ -66,11 +66,14 @@ public class GridService : IGridService
 
         foreach (Square square in squares)
         {
-            square.Status = status;
+            square.UpdateStatus(status);
         }
     }
 
     public IEnumerable<string> GetValidTargets(Grid grid) => grid.ValidTargets;
+
+    public IEnumerable<string> GetValidNeighbouringTargets(Grid grid, string position, string y = "", string x = "") =>
+        grid.GetValidNeighbouringTargets(position, y, x);
 
     public IEnumerable<string> GetShipPositions(Grid grid) => grid.ShipPositions;
 
@@ -87,15 +90,14 @@ public class GridService : IGridService
             throw new ShipTargetingException($"Unable to find square at position {target}");
         }
 
+        ShipType? shipType = null;
         if (square.Status.HasValue && SquareStatus.Ship.HasFlag(square.Status.Value))
         {
-            var shipType = square.Status.Value.ToShipType();
-            square.Status = SquareStatus.Hit;
-            return shipType;
+            shipType = square.Status.Value.ToShipType();
         }
 
-        square.Status = SquareStatus.Miss;
-        return null;
+        square.UpdateStatus(SquareStatus.Hit);
+        return shipType;
     }
 
     public bool HasShipBeenSunk(Grid grid, ShipType shipType) => grid.HasShipBeenSunk(shipType);

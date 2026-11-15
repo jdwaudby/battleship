@@ -23,15 +23,61 @@ public static class GridExtensions
         public IEnumerable<string> ValidTargets =>
             [.. grid.EmptyPositions, .. grid.ShipPositions];
 
+        public IEnumerable<string> ParityTargets =>
+            grid.Squares
+                .Where(s => (s.Status is null || SquareStatus.Ship.HasFlag(s.Status.Value))
+                            && (Grid.LetterSequenceToInteger(s.Y) + int.Parse(s.X)) % 2 == 0)
+                .Select(s => s.Coordinates);
+
+        public bool HasStandardShipsRemaining =>
+            grid.Squares.Any(s => s.Status is { } status
+                                  && SquareStatus.Ship.HasFlag(status)
+                                  && status != SquareStatus.Ship);
+
+        public IEnumerable<string> UnsunkHitPositions =>
+            grid.Squares
+                .Where(s => s.Status is { } status
+                            && status.HasFlag(SquareStatus.Hit)
+                            && (status & SquareStatus.Ship) != 0
+                            && !grid.HasShipBeenSunk(status.ToShipType()))
+                .OrderBy(s => s.LastUpdated)
+                .Select(s => s.Coordinates);
+
         public bool IsValidTarget(string coordinates) =>
             grid[coordinates] is { } square && (square.Status is null || SquareStatus.Ship.HasFlag(square.Status.Value));
+
+        public IEnumerable<string> GetValidNeighbouringTargets(string position, string y = "", string x = "")
+        {
+            Square middle = grid[position] ?? throw new InvalidOperationException($"Unable to find square at position {position}");
+
+            List<Square?> candidates = [];
+
+            if (string.IsNullOrEmpty(y))
+            {
+                int yInt = Grid.LetterSequenceToInteger(middle.Y);
+                candidates.Add(grid[$"{Grid.IntegerToLetterSequence(yInt + 1)}{middle.X}"]);
+                candidates.Add(grid[$"{Grid.IntegerToLetterSequence(yInt - 1)}{middle.X}"]);
+            }
+
+            if (string.IsNullOrEmpty(x))
+            {
+                int xInt = int.Parse(middle.X);
+                candidates.Add(grid[$"{middle.Y}{xInt - 1}"]);
+                candidates.Add(grid[$"{middle.Y}{xInt + 1}"]);
+            }
+
+            return candidates
+                .OfType<Square>()
+                .Where(s => grid.IsValidTarget(s.Coordinates))
+                .Select(s => s.Coordinates);
+        }
 
         public IEnumerable<string> GetPositions(SquareStatus status) =>
             grid.Squares.Where(s => s.Status.HasValue && status.HasFlag(s.Status.Value))
                 .Select(s => s.Coordinates);
 
         public bool HasShipBeenSunk(ShipType shipType) =>
-            !grid.GetPositions(shipType.ToSquareStatus()).Any();
+            shipType is ShipType.Custom || !grid.GetPositions(shipType.ToSquareStatus()).Any();
 
         public IEnumerable<Square> GetSquares(Square bowSquare, Heading heading) => heading switch
         {

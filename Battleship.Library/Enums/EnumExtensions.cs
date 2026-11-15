@@ -2,7 +2,7 @@ namespace Battleship.Library.Enums;
 
 public static class EnumExtensions
 {
-    public static ShipType ToShipType(this SquareStatus status) => status switch
+    public static ShipType ToShipType(this SquareStatus status) => (status & SquareStatus.Ship) switch
     {
         SquareStatus.AircraftCarrier => ShipType.AircraftCarrier,
         SquareStatus.Battleship      => ShipType.Battleship,
